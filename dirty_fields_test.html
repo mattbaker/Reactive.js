@@ -21,6 +21,17 @@
 	</style>
 	<script>
 	$(function() {
+		var locked = new ReactiveFnc(function() {
+			return this.locked.checked;
+		}).bindElement({locked:document.getElementById("lock")}, "change");
+		
+		var toggleLock = new ReactiveFnc(function() {
+			var isLocked = this.isLocked;
+			$.each(this.allocationFields, function() {
+				this.disabled = isLocked;
+			});
+		}).bind({isLocked:locked}).bindSelector({allocationFields:".allocation"});
+		
 		var groupedRows = new ReactiveFnc(function() {
 			var dirtyRows = [], cleanRows = [];
 			$.each(this.allocationFields, function() {
@@ -42,8 +53,9 @@
 		}).bind({rows:groupedRows});
 		
 		var toggleButton = new ReactiveFnc(function() {
-			this.dirtyRows.length ? $("#submit").removeAttr("disabled") : $("#submit").attr("disabled","true");
-		}).bind({dirtyRows:dirtyRows});
+			var shouldEnable = !this.isLocked && this.dirtyRows.length;
+			shouldEnable ? $("#submit").removeAttr("disabled") : $("#submit").attr("disabled","true");
+		}).bind({dirtyRows:dirtyRows, isLocked:locked});
 		
 		var toggleRow = new ReactiveFnc(function() {
 			$(this.dirtyRows).closest("tr").addClass("dirty");
@@ -52,7 +64,7 @@
 		
 		var numChanges = new ReactiveFnc(function() {
 			$("#count").html(this.dirtyRows.length);
-		}).bind({dirtyRows:dirtyRows});
+		}).bind({dirtyRows:dirtyRows});		
 	});
 	
 	</script>
@@ -60,6 +72,7 @@
 <body>
 	<div id="wrapper">
 		<h1>Changes: <span id="count">0</span></h1>
+		<input type="checkbox" id="lock">
 		<table id="alloc-table">
 			<tr>
 				<td><input class="allocation" id="first" type="text" value="123"></td>
