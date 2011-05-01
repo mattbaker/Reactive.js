@@ -36,5 +36,22 @@
     }
     return this;
   }
+  ReactiveFnc.prototype.bindValue = function(values) {  
+    for(v in values) {
+      this.dependencies[v] = new StaticValue(values[v]);
+    }
+    return this;
+  }
+  
+  function StaticValue(value) {
+    this.value = value;
+    this.dependencies = {};
+    this.dependents = [];
+  }
+  StaticValue.prototype.get = function() {
+    return this.value;
+  };
+  StaticValue.prototype.call = StaticValue.prototype.get;
+  
   window.ReactiveFnc = ReactiveFnc;
 })();
