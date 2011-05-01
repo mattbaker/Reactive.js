@@ -12,4 +12,13 @@
     }
     return this;
   }
+  ReactiveFnc.prototype.bindElement = function(elements, evnt) {
+    this.bindValue(elements);
+    if(evnt) {
+      for(e in elements) {
+        $(elements[e]).bind(evnt, ((function(){this.call();}).bind(this)));
+      }
+    }
+    return this;
+  };
 })();
