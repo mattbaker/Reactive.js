@@ -23,14 +23,17 @@
 	$(function() {
 		var locked = new ReactiveFnc(function() {
 			return this.locked.checked;
-		}).bindElement({locked:document.getElementById("lock")}, "change");
+		})
+		.bindElement({locked:document.getElementById("lock")}, "change");
 		
 		var toggleLock = new ReactiveFnc(function() {
 			var isLocked = this.isLocked;
 			$.each(this.allocationFields, function() {
 				this.disabled = isLocked;
 			});
-		}).bind({isLocked:locked}).bindSelector({allocationFields:".allocation"});
+		})
+		.bind({isLocked:locked})
+		.bindSelector({allocationFields:".allocation"});
 		
 		var groupedRows = new ReactiveFnc(function() {
 			var dirtyRows = [], cleanRows = [];
@@ -42,29 +45,35 @@
 				}
 			});
 			return [cleanRows, dirtyRows];
-		}).bindSelector({allocationFields:".allocation"}, "change");
+		})
+		.bindSelector({allocationFields:".allocation"}, "change");
 		
 		var dirtyRows = new ReactiveFnc(function() {
 			return this.rows[1];
-		}).bind({rows:groupedRows});
+		})
+		.bind({rows:groupedRows});
 		
 		var cleanRows = new ReactiveFnc(function() {
 			return this.rows[0];
-		}).bind({rows:groupedRows});
+		})
+		.bind({rows:groupedRows});
 		
 		var toggleButton = new ReactiveFnc(function() {
 			var shouldEnable = !this.isLocked && this.dirtyRows.length;
 			shouldEnable ? $("#submit").removeAttr("disabled") : $("#submit").attr("disabled","true");
-		}).bind({dirtyRows:dirtyRows, isLocked:locked});
+		})
+		.bind({dirtyRows:dirtyRows, isLocked:locked});
 		
 		var toggleRow = new ReactiveFnc(function() {
 			$(this.dirtyRows).closest("tr").addClass("dirty");
 			$(this.cleanRows).closest("tr").removeClass("dirty");
-		}).bind({dirtyRows:dirtyRows, cleanRows:cleanRows});
+		}).
+		bind({dirtyRows:dirtyRows, cleanRows:cleanRows});
 		
 		var numChanges = new ReactiveFnc(function() {
 			$("#count").html(this.dirtyRows.length);
-		}).bind({dirtyRows:dirtyRows});		
+		})
+		.bind({dirtyRows:dirtyRows});		
 	});
 	
 	</script>
