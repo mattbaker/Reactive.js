@@ -1,99 +1,99 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-	<title>Dirty Fields</title>
-	<script src="functional_reactive.js"></script>
-	<script src="reactive_extensions.js"></script>
-	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js"></script>
-	<!--[if IE]>
-	<script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-	<![endif]-->
-	<style>
-	html, body {height:100%; width:100%; margin:0; padding:0;}
-	body {background: -webkit-gradient(linear, center top, center bottom, from(#d7d5d5), to(#fffcfd));
-				font-family: Helvetica, Arial, sans-serif;}
-	#wrapper {padding-top:50px; margin:0 auto; width:200px; text-align:center;}
-	.dirty {background: #bfbfbf;}
-	.allocation {width:50px;text-align:center;}
-	#alloc-table {width:200px;}
-	#alloc-table td{-webkit-box-shadow:inset 0px 0px 10px #fffcfd; border:1px solid grey;}
-	</style>
-	<script>
-	$(function() {
-		var locked = new ReactiveFnc(function() {
-			return this.locked.checked;
-		})
-		.bindElement({locked:document.getElementById("lock")}, "change");
-		
-		var toggleLock = new ReactiveFnc(function() {
-			var isLocked = this.isLocked;
-			$.each(this.allocationFields, function() {
-				this.disabled = isLocked;
-			});
-		})
-		.bind({isLocked:locked})
-		.bindSelector({allocationFields:".allocation"});
-		
-		var groupedRows = new ReactiveFnc(function() {
-			var dirtyRows = [], cleanRows = [];
-			$.each(this.allocationFields, function() {
-				if(this.defaultValue == this.value) {
-					cleanRows.push(this);
-				} else {
-					dirtyRows.push(this);
-				}
-			});
-			return [cleanRows, dirtyRows];
-		})
-		.bindSelector({allocationFields:".allocation"}, "change");
-		
-		var dirtyRows = new ReactiveFnc(function() {
-			return this.rows[1];
-		})
-		.bind({rows:groupedRows});
-		
-		var cleanRows = new ReactiveFnc(function() {
-			return this.rows[0];
-		})
-		.bind({rows:groupedRows});
-		
-		var toggleButton = new ReactiveFnc(function() {
-			var shouldEnable = !this.isLocked && this.dirtyRows.length;
-			shouldEnable ? $("#submit").removeAttr("disabled") : $("#submit").attr("disabled","true");
-		})
-		.bind({dirtyRows:dirtyRows, isLocked:locked});
-		
-		var toggleRow = new ReactiveFnc(function() {
-			$(this.dirtyRows).closest("tr").addClass("dirty");
-			$(this.cleanRows).closest("tr").removeClass("dirty");
-		}).
-		bind({dirtyRows:dirtyRows, cleanRows:cleanRows});
-		
-		var numChanges = new ReactiveFnc(function() {
-			$("#count").html(this.dirtyRows.length);
-		})
-		.bind({dirtyRows:dirtyRows});		
-	});
-	
-	</script>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>Dirty Fields</title>
+  <script src="functional_reactive.js"></script>
+  <script src="reactive_extensions.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js"></script>
+  <!--[if IE]>
+  <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+  <style>
+  html, body {height:100%; width:100%; margin:0; padding:0;}
+  body {background: -webkit-gradient(linear, center top, center bottom, from(#d7d5d5), to(#fffcfd));
+        font-family: Helvetica, Arial, sans-serif;}
+  #wrapper {padding-top:50px; margin:0 auto; width:200px; text-align:center;}
+  .dirty {background: #bfbfbf;}
+  .allocation {width:50px;text-align:center;}
+  #alloc-table {width:200px;}
+  #alloc-table td{-webkit-box-shadow:inset 0px 0px 10px #fffcfd; border:1px solid grey;}
+  </style>
+  <script>
+  $(function() {
+    var locked = new ReactiveFnc(function() {
+      return this.locked.checked;
+    })
+    .bindElement({locked:document.getElementById("lock")}, "change");
+    
+    var toggleLock = new ReactiveFnc(function() {
+      var isLocked = this.isLocked;
+      $.each(this.allocationFields, function() {
+        this.disabled = isLocked;
+      });
+    })
+    .bind({isLocked:locked})
+    .bindSelector({allocationFields:".allocation"});
+    
+    var groupedRows = new ReactiveFnc(function() {
+      var dirtyRows = [], cleanRows = [];
+      $.each(this.allocationFields, function() {
+        if(this.defaultValue == this.value) {
+          cleanRows.push(this);
+        } else {
+          dirtyRows.push(this);
+        }
+      });
+      return [cleanRows, dirtyRows];
+    })
+    .bindSelector({allocationFields:".allocation"}, "change");
+    
+    var dirtyRows = new ReactiveFnc(function() {
+      return this.rows[1];
+    })
+    .bind({rows:groupedRows});
+    
+    var cleanRows = new ReactiveFnc(function() {
+      return this.rows[0];
+    })
+    .bind({rows:groupedRows});
+    
+    var toggleButton = new ReactiveFnc(function() {
+      var shouldEnable = !this.isLocked && this.dirtyRows.length;
+      shouldEnable ? $("#submit").removeAttr("disabled") : $("#submit").attr("disabled","true");
+    })
+    .bind({dirtyRows:dirtyRows, isLocked:locked});
+    
+    var toggleRow = new ReactiveFnc(function() {
+      $(this.dirtyRows).closest("tr").addClass("dirty");
+      $(this.cleanRows).closest("tr").removeClass("dirty");
+    }).
+    bind({dirtyRows:dirtyRows, cleanRows:cleanRows});
+    
+    var numChanges = new ReactiveFnc(function() {
+      $("#count").html(this.dirtyRows.length);
+    })
+    .bind({dirtyRows:dirtyRows});
+  });
+  
+  </script>
 </head>
 <body>
-	<div id="wrapper">
-		<h1>Changes: <span id="count">0</span></h1>
-		<input type="checkbox" id="lock">
-		<table id="alloc-table">
-			<tr>
-				<td><input class="allocation" id="first" type="text" value="123"></td>
-			</tr>
-			<tr>
-				<td><input class="allocation" id="second" type="text" value="456"></td>
-			</tr>
-			<tr>
-				<td><input class="allocation" id="third" type="text" value="789"></td>
-			</tr>
-		</table>
-		<button id="submit" disabled>Submit</button>
-	</div>
+  <div id="wrapper">
+    <h1>Changes: <span id="count">0</span></h1>
+    <input type="checkbox" id="lock">
+    <table id="alloc-table">
+      <tr>
+        <td><input class="allocation" id="first" type="text" value="123"></td>
+      </tr>
+      <tr>
+        <td><input class="allocation" id="second" type="text" value="456"></td>
+      </tr>
+      <tr>
+        <td><input class="allocation" id="third" type="text" value="789"></td>
+      </tr>
+    </table>
+    <button id="submit" disabled>Submit</button>
+  </div>
 </body>
 </html>
