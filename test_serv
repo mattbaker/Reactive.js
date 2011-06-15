@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+echo JS test driver listening at http://localhost:4223
+java -jar JsTestDriver.jar --config jsTestDriver.conf --port 4223
+
