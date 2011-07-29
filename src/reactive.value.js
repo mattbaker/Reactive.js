@@ -1,3 +1,7 @@
+///
+// how do we handle toggle???
+// function that returns on click of link... true or false, that value?
+//
 //Constant = DOM.Element • DOM.Attribute -> Constant
 //Constant = Object -> Constant
 //Reactive.Value = Constant • DOM.Event -> Constant
@@ -34,84 +38,68 @@ Value.Select(function() { modify value}) -> Value //map... behavior?
     var args = Array.prototype.slice.apply(arguments);
     switch(arguments.length) {
       case 3:
-      return Reactive._ObjectPropertyValue.apply(this, args).tap(function() {
-        this.bindEvent();
-      });
-      return v;
+      console.log(Reactive);
+        return Reactive._ObjectPropertyValue.apply(this, args).tap(function() {
+          this.bindEvent();
+        });
       break;
       case 2:
-      return Reactive._ObjectValue.apply(this, args).tap(function() {
-        this.bindEvent();
-      });
+        return Reactive._Value.apply(this, args);
       break;
       case 1:
-      return Reactive._LiteralValue.call(this, args);
+        return Reactive._IdentityValue.call(this, args);
       break;
     }
   }
-
-  Reactive.Value.prototype = new Reactive.Base;
-  Reactive.Value.prototype.get = function() {
+    
+  Reactive._Value = function(fnc, args) {
+    if (!(this instanceof Reactive._Value)) {
+      return new Reactive._Value(fnc, args);
+    }
+    this.fnc = fnc;
+    this.args = args;
+  }
+  Reactive._Value.prototype = new Reactive.Base;
+  Reactive._Value.prototype.dependents = [];
+  Reactive._Value.prototype.get = function() {
     this.memo = this.memo === undefined ? this.update() : this.memo;
     return this.memo;
   }
-  Reactive.Value.prototype.update = function() {
-    //this.updateDependents();//?????????????????????????????
+  Reactive._Value.prototype.update = function() {
+    this.memo = this.retrieveValue();
+    this.notifyDependents();
     return this.memo;
   }
+  Reactive._Value.prototype.retrieveValue = function() {
+    return this.fnc.apply(this, this._argumentList());
+  }
+  Reactive._Value.prototype.notifyDependents = function() {
+    for(var i=0,l=this.dependents.length; i<l; i++) {
+      this.dependents[i].call();
+    }
+  }
+  Reactive._Value.prototype._argPositions = function() {
+    var positions = {};
+    var argNames = this.fnc
+                    .toString()
+                    .match(/\((.*)\)/)[1]
+                    .replace(/\s/g, "")
+                    .split(",");
+    for(var i=0,l=argNames.length;i<l;i++) {
+      positions[argNames[i]] = i;
+    }
+    this.argPositions = function() { return positions };//thunk
+    return positions;
+  }
+  Reactive._Value.prototype._argumentList = function() {
+    var args = [];
+    for(v in this.args) {
+      args[this._argPositions()[v]] = this.dependencies[v].get();
+    }
+    return args;
+  }
   
-  Reactive.Value._listener = function(e) {
-    console.log("Calling event listener");
-    this.update();
-  }
-  
-  Reactive._LiteralValue = function(value) {
-    if (!(this instanceof Reactive._LiteralValue)) {
-      //TODO: http://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible
-      return new Reactive._LiteralValue(value);
-    }
-    this.value = value;
-  }
-  Reactive._LiteralValue.prototype = new Reactive.Value;
-  Reactive._LiteralValue.prototype.get = function(){return this.value;}
-  Reactive._LiteralValue.prototype.update = function(){return this.value;}
-  
-  Reactive._ObjectValue = function(obj, evnt) {
-    if (!(this instanceof Reactive._ObjectValue)) {
-      return new Reactive._ObjectValue(obj, evnt);
-    }
-    this.value = obj;
-    this.evnt = evnt;
-  }
-  Reactive._ObjectValue.prototype = new Reactive.Value;//TODO this must be wrong
-  Reactive._ObjectValue.prototype.bindEvent = function() {
-    this.addEventListener(this.evnt, Reactive.Value._listener.bind(this));
-  }
-  Reactive._ObjectValue.prototype.update = function() {
-    this.memo = this.value;
-    return this.memo;
-  }
-  Reactive._ObjectValue.prototype.addEventListener = function(eventName, fnc) {
-    if (this.value.addEventListener !== undefined) {
-      this.value.addEventListener(this.evnt, Reactive.Value._listener.bind(this), false);  
-    } else {
-      this.events = this.events || {};
-      this.events[eventName] = this.events[eventName] || []; 
-      this.events[eventName].push(fnc);
-    }
-  }
-  //Doesn't handle the DOM yet
-  Reactive._ObjectValue.prototype.triggerEvent = function(eventName, data) {
-    if(this.events) {
-      for(var i=0,l=this.events.length;i<l;i++) {
-        this.events[i](data);
-      }
-    }
-  }
-  ///
-  // how do we handle toggle???
-  // function that returns on click of link... true or false, that value?
-  //
+  /* A evented object property value */
   Reactive._ObjectPropertyValue = function(obj, property, evnt) {
     if (!(this instanceof Reactive._ObjectPropertyValue)) {
       //TODO: http://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible
@@ -121,9 +109,26 @@ Value.Select(function() { modify value}) -> Value //map... behavior?
     this.property = property;
     this.evnt = evnt;
   }
-  Reactive._ObjectPropertyValue.prototype = new Reactive._ObjectValue;//this must be wrong
-  Reactive._ObjectPropertyValue.prototype.update = function() {
-    this.memo = this.value[this.property];
-    return this.memo;
+  Reactive._ObjectPropertyValue.prototype = new Reactive._Value;
+  Reactive._ObjectPropertyValue.prototype.retrieveValue = function() {
+    return this.value[this.property];
+  }
+  Reactive._ObjectPropertyValue._listener = function(e) {
+    console.log("Calling event listener");
+    this.update();
+  }
+  Reactive._ObjectPropertyValue.prototype.bindEvent = function() {
+    this.value.addEventListener(this.evnt, Reactive._ObjectPropertyValue._listener.bind(this), false);  
   }  
+
+  /* A literal, static value */
+  Reactive._IdentityValue = function(value) {
+    if (!(this instanceof Reactive._IdentityValue)) {
+      //TODO: http://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible
+      return new Reactive._IdentityValue(value);
+    }
+    this.value = value;
+  }
+  Reactive._IdentityValue.prototype = new Reactive._Value;
+  Reactive._IdentityValue.prototype.retrieveValue = function(){return this.value;}
 })();
