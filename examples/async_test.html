@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>Dirty Fields</title>
+  <script src="../src/reactive.js"></script>
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+  <style>
+  html, body {height:100%; width:100%; margin:0; padding:0;}
+  body {
+		background: -webkit-gradient(linear, center top, center bottom, from(#d7d5d5), to(#fffcfd));
+		font-family: Helvetica, Arial, sans-serif;
+		padding:50px;
+	}
+	li {list-style:none;}
+  </style>
+</head>
+<body>
+	<div><b>Current time:</b><time></time></div>
+	<div><b>Request response:</b><input id="status"></div>
+	<div id="response-message"></div>	
+	<button>Make Request</button>
+  <script>
+		var now = $reactify(function() {
+					return (new Date).toString();
+				}),
+				
+				updateTime = $reactify(function(time) {
+					$("time").html(time);
+				}).bindArguments({time:now}),
+				
+				onResponse = $reactify(function(r) {
+					return r;
+				}),
+				
+				responseValue = $reactify(function(r) {
+					var responseCode = r.response == "A" ? 200 : 400;
+					$("#status").val(responseCode);
+				}).bindArguments({r:onResponse}),
+				
+				responseMessage = $reactify(function(r) {
+					var msg = "Server responded: "+r.response;
+					$("#response-message").html(msg);
+				}).bindArguments({r:onResponse});
+		
+		$("button").click(function() {
+			simulatedAsync(onResponse);
+		});
+		
+		function simulatedAsync(f, wait) {
+			wait = wait || 1000;
+			setTimeout(function() {
+				f(parseInt(Math.random()*10)%2 ? {response:"A"} : {response:"B"});
+			}, wait);
+		}
+	setInterval(now, 0);
+  </script>
+</body>
+</html>

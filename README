@@ -1,3 +1,34 @@
-This is just a sketchpad for playing around with ideas related to handling stateful or more complex client side UIs. It's inspired by functional reactive ideas but is hardly true to the vision of functional reactive programming (I hope to change that as I learn more).
+#A small reactive framework
+ReactJS "reactifies" Javascript function objects, allowing you to create an auto-updating dependency graph of functions. Reactive functions behave just like normal ones unless their arguments are bound to other reactives.
+	
+	function foo() {
+		return 1000;
+	}
+	function mult(x) {
+		multRan = true;
+		return x * 2;
+	}
+	var rFoo = $reactify(foo),
+		rMult = $reactify(mult).bindArguments({x:rFoo}),
+		multRan = false;
 
-Here there be dragons.
+	console.assert(multRan == false);
+	rFoo();
+	console.assert(multRan == true);
+	console.assert(2000 == rMult());
+	console.assert(10 == rMult(5));
+	
+Modern web applications often represent one enormous dependency graph of UI elements and state. ReactJS essentially implements the Observer pattern on Javascript's Function type.
+
+##Todo
+Better README, examples. Add ability to "reactify" objects and their properties:
+	
+	//Clock
+	var now = $reactify(function(){ return (new Date).toString(); }),
+		timeElt = document.getElementById("time");
+	$reactify(timeElt, "innerHTML").equals(now);
+
+###Note
+It's true that Function's toString() is implementation dependent according to the ECMA Script spec, so the fancy bindArguments is not guaranteed to work. I included it because I liked it, and it seems to work as expected with all the implementations I've tested.
+
+And yes, I seriously parsed Function's toString. You probably think it's hideous, but it's the only reflection I've got. And yes, I know it's not necessary.

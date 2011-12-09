@@ -1,52 +1,77 @@
 (function() {
-  if(typeof Function.bind === 'undefined') {
-    Function.prototype.bind = function(object){ 
-      var fn = this; 
-      return function(){ 
-        return fn.apply(object, arguments); 
-      }; 
-    };
+  function $reactify(fnc) {
+      var rf = function() {
+        var v = rf.run.apply(rf,arguments);
+        rf.notifyDependents();
+        return v;
+      };
+      rf.fnc = fnc;
+      rf.dependents = [];
+      rf.dependencies = {};
+      return mixin(rf, reactiveExtensions);
   }
-
-  var Reactive = {};
-  Reactive.Base = function() {
-  }
-  Reactive.Base.prototype.tap = function(f) {
-    f.apply(this,[]);
-    return this;
-  };
-  
-  /*
-  Reactive.each = function(arr, f) {
-    for(var i=0,l=arr.length;i<l;f.call(arr[i]),i++);
-  }
-  Reactive.map = function(arr, f) {
-    var mapped = [];
-    for(var i=0,l=arr.length;i<l;mapped[i] = f.call(arr[i]),i++);
-    return mapped;
-  }
-  
-  Reactive.Base = function() {
-    this.dependencies = {};
-    this.dependents = [];
-  }
-  Reactive.Base.merge = function(from, into) {
-    for(v in from) {
-      into[v] = from[v];
-    }
-  }
-  Reactive.Base.prototype = {
-    get: function(){ throw new Error("Not implemented")},
-    update: function(){ throw new Error("Not implemented")},
-    updateDependents: function() {
-      var dependents = this.dependents;
-      for(var i=0,l=dependents.length;i<l;i++) {
-        dependents.update();
+  function mixin(target,extra) {
+    var k;
+    for(k in extra) {
+      if(extra.hasOwnProperty(k)) {
+        target[k] = extra[k];
       }
     }
-  }*/
-  
+    return target;
+  }
+  var reactiveExtensions = {
+    reactive: true,
+    get: function() { if (this.memo===undefined) {return this.run()}; return this.memo;},
+    run: function() {
+      var args = Array.prototype.slice.call(arguments),
+          v = this.fnc.apply(this, this.getArgArray(args));
+      this.memo = v;
+      return v;
+    },
+    notifyDependents: function() {
+      var i=0, l=this.dependents.length;
+      for (;i<l;i++) { this.dependents[i](); }
+    },
+    argInfo: function() {
+      var i=0,
+      args = this.fnc.toString()
+        .match(/\((.*)\)/)[1]
+        .replace(/\s/g, "")
+        .split(","),
+      arity = args.length,
+      argInfo = {arity:arity, index:{}, name:args};
 
-  
-  window.Reactive = Reactive;
+      for(;i<arity;i++) { argInfo.index[args[i]] = i; }
+      this.argInfo = function() { return argInfo };
+      return argInfo;
+    },
+    bindArguments: function(argObj) {
+      var k;
+      for(k in argObj) {
+        this.dependencies[k] = argObj[k];
+        argObj[k].dependents.push(this);
+      }
+      return this;
+    },
+    getArgArray: function(fncArguments) {
+      var args = [], 
+          currentReactive,
+          argInfo = this.argInfo(),
+          i = 0;
+      if(fncArguments.length == argInfo.arity) { 
+        return fncArguments; 
+      }
+      for(;i<argInfo.arity;i++) {
+        currentReactive = this.dependencies[argInfo.name[i]];
+        if(currentReactive !== undefined) {
+          args[i] = currentReactive.get();
+        } else {
+          args[i] = fncArguments.shift();
+        }
+      }
+      return args;
+    }
+  }
+      
+  window.$reactify = $reactify;
 })();
