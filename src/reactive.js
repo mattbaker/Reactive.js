@@ -1,5 +1,5 @@
 (function() {
-  function $reactify(fnc) {
+  function $R(fnc) {
       var rf = function() {
         var v = rf.run.apply(rf,arguments);
         rf.notifyDependents();
@@ -7,71 +7,74 @@
       };
       rf.fnc = fnc;
       rf.dependents = [];
-      rf.dependencies = {};
-      return mixin(rf, reactiveExtensions);
+      rf.dependencies = [];
+      return augment(rf, reactiveExtensions);
   }
-  function mixin(target,extra) {
+  function augment(target, augmentation) {
     var k;
-    for(k in extra) {
-      if(extra.hasOwnProperty(k)) {
-        target[k] = extra[k];
+    for(k in augmentation) {
+      if(augmentation.hasOwnProperty(k)) {
+        target[k] = augmentation[k];
       }
     }
     return target;
   }
+  function identity(v) {
+    return $R(function(){return v;});
+  }
+  function wrap(v) {
+    return v && v._isReactive ? v : identity(v);
+  }
   var reactiveExtensions = {
-    reactive: true,
-    get: function() { if (this.memo===undefined) {return this.run()}; return this.memo;},
+    _isReactive: true,
+    get: function() { return this.memo === undefined ? this.run() : this.memo;},
     run: function() {
-      var args = Array.prototype.slice.call(arguments),
-          v = this.fnc.apply(this, this.getArgArray(args));
-      this.memo = v;
-      return v;
+      var args = Array.prototype.slice.call(arguments);
+      return this.memo = this.fnc.apply(this, this.argumentList(args));
     },
     notifyDependents: function() {
       var i=0, l=this.dependents.length;
       for (;i<l;i++) { this.dependents[i](); }
     },
-    argInfo: function() {
+    signature: function() {
       var i=0,
-      args = this.fnc.toString()
-        .match(/\((.*)\)/)[1]
-        .replace(/\s/g, "")
-        .split(","),
-      arity = args.length,
-      argInfo = {arity:arity, index:{}, name:args};
+          names = this.fnc.toString()
+            .match(/^[\s\(]*function[^(]*\(([^)]*)\)/)[1]
+            .replace(/\/\/.*?[\r\n]|\/\*(?:.|[\r\n])*?\*\//g, '')
+            .replace(/\s+/g, '').split(',');
+          arity = names.length,
+          signature = {arity:arity, index:{}, name:names};
 
-      for(;i<arity;i++) { argInfo.index[args[i]] = i; }
-      this.argInfo = function() { return argInfo };
-      return argInfo;
+      for(;i<arity;i++) { signature.index[names[i]] = i; }
+      this.signature = function() { return signature };
+      return signature;
     },
-    bindArguments: function(argObj) {
+    register: function(keyOrObject, value) {
+      return arguments.length == 2 ? this._registerSingle(keyOrObject,value) : this._registerMany(keyOrObject);
+    },
+    _registerSingle: function(key,value) {
+      var reactiveValue = wrap(value),
+          signature = this.signature();
+      this.dependencies[signature.index[key]] = reactiveValue;
+      reactiveValue.dependents.push(this);
+      return this;
+    },
+    _registerMany: function(argObj) {
       var k;
       for(k in argObj) {
-        this.dependencies[k] = argObj[k];
-        argObj[k].dependents.push(this);
+        if (argObj.hasOwnProperty(k)) { this._registerSingle(k, argObj[k]); }
       }
       return this;
     },
-    getArgArray: function(fncArguments) {
-      var args = [], 
-          currentReactive,
-          argInfo = this.argInfo(),
-          i = 0;
-      if(fncArguments.length == argInfo.arity) { 
-        return fncArguments; 
-      }
-      for(;i<argInfo.arity;i++) {
-        currentReactive = this.dependencies[argInfo.name[i]];
-        if(currentReactive !== undefined) {
-          args[i] = currentReactive.get();
-        } else {
-          args[i] = fncArguments.shift();
-        }
+    argumentList: function(fncArguments) {
+      var args = [],
+          signature = this.signature(),
+          i = 0, j = 0;
+      for(;i<signature.arity;i++) {
+        args.push(this.dependencies[i] !== undefined ? this.dependencies[i].get() : fncArguments[j++]);
       }
       return args;
     }
   }
-      
-  window.$reactify = $reactify;
+  window.$R = $R;
 })();

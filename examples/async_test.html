@@ -18,35 +18,35 @@
 <body>
 	<div><b>Current time:</b><time></time></div>
 	<div><b>Request response:</b><input id="status"></div>
-	<div id="response-message"></div>	
+	<div id="response-message"></div>
 	<button>Make Request</button>
   <script>
-		var now = $reactify(function() {
+		var now = $R(function() {
 					return (new Date).toString();
 				}),
-				
-				updateTime = $reactify(function(time) {
+
+				updateTime = $R(function(time) {
 					$("time").html(time);
-				}).bindArguments({time:now}),
-				
-				onResponse = $reactify(function(r) {
+				}).register("time",now),
+
+				onResponse = $R(function(r) {
 					return r;
 				}),
-				
-				responseValue = $reactify(function(r) {
+
+				responseValue = $R(function(r) {
 					var responseCode = r.response == "A" ? 200 : 400;
 					$("#status").val(responseCode);
-				}).bindArguments({r:onResponse}),
-				
-				responseMessage = $reactify(function(r) {
+				}).register({r:onResponse}),
+
+				responseMessage = $R(function(r) {
 					var msg = "Server responded: "+r.response;
 					$("#response-message").html(msg);
-				}).bindArguments({r:onResponse});
-		
+				}).register({r:onResponse});
+
 		$("button").click(function() {
 			simulatedAsync(onResponse);
 		});
-		
+
 		function simulatedAsync(f, wait) {
 			wait = wait || 1000;
 			setTimeout(function() {
