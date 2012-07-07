@@ -37,6 +37,7 @@
       for (;i<l;i++) { this.dependents[i](); }
     },
     signature: function() {
+      if (this._signature) { return this._signature };
       var i=0,
           names = this.fnc.toString()
             .match(/^[\s\(]*function[^(]*\(([^)]*)\)/)[1]
@@ -46,8 +47,7 @@
           signature = {arity:arity, index:{}, name:names};
 
       for(;i<arity;i++) { signature.index[names[i]] = i; }
-      this.signature = function() { return signature };
-      return signature;
+      return this._signature = signature;
     },
     register: function(keyOrObject, value) {
       return arguments.length == 2 ? this._registerSingle(keyOrObject,value) : this._registerMany(keyOrObject);
@@ -71,7 +71,11 @@
           signature = this.signature(),
           i = 0, j = 0;
       for(;i<signature.arity;i++) {
-        args.push(this.dependencies[i] !== undefined ? this.dependencies[i].get() : fncArguments[j++]);
+        if (fncArguments[i] !== undefined) {
+          args.push(fncArguments[i]);
+        } else if (this.dependencies[i] !== undefined) {
+          args.push(this.dependencies[i].get());
+        }
       }
       return args;
     }

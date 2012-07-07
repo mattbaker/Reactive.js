@@ -1,6 +1,11 @@
+#This is an exploration
+This is on github just to throw some ideas around, but what you'll see here is me playing around with some concepts and syntax for dealing with reactive functions.
+
+If it ever reaches a useful point, this will turn into a real project. Docs, examples, and everything! I swear.
+
 #A small reactive framework
 ReactJS "reactifies" Javascript function objects, allowing you to create an auto-updating dependency graph of functions. Reactive functions behave just like normal ones unless their arguments are bound to other reactives.
-	
+
 	function foo() {
 		return 1000;
 	}
@@ -8,8 +13,8 @@ ReactJS "reactifies" Javascript function objects, allowing you to create an auto
 		multRan = true;
 		return x * 2;
 	}
-	var rFoo = $reactify(foo),
-		rMult = $reactify(mult).bindArguments({x:rFoo}),
+	var rFoo = $R(foo),
+		rMult = $R(mult).register({x:rFoo}),
 		multRan = false;
 
 	console.assert(multRan == false);
@@ -17,16 +22,16 @@ ReactJS "reactifies" Javascript function objects, allowing you to create an auto
 	console.assert(multRan == true);
 	console.assert(2000 == rMult());
 	console.assert(10 == rMult(5));
-	
+
 Modern web applications often represent one enormous dependency graph of UI elements and state. ReactJS essentially implements the Observer pattern on Javascript's Function type.
 
 ##Todo
 Better README, examples. Add ability to "reactify" objects and their properties:
-	
+
 	//Clock
-	var now = $reactify(function(){ return (new Date).toString(); }),
+	var now = $R(function(){ return (new Date).toString(); }),
 		timeElt = document.getElementById("time");
-	$reactify(timeElt, "innerHTML").equals(now);
+	$R(timeElt, "innerHTML").equals(now);
 
 ###Note
 It's true that Function's toString() is implementation dependent according to the ECMA Script spec, so the fancy bindArguments is not guaranteed to work. I included it because I liked it, and it seems to work as expected with all the implementations I've tested.
