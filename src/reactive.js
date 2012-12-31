@@ -5,80 +5,66 @@
         rf.notifyDependents();
         return v;
       };
-      rf.context = context || null;
+      rf.context = context || {};
       rf.fnc = fnc;
       rf.dependents = [];
       rf.dependencies = [];
-      return augment(rf, reactiveExtensions);
+      return _.extend(rf, reactiveExtensions);
   }
-  function augment(target, augmentation) {
-    var k;
-    for(k in augmentation) {
-      if(augmentation.hasOwnProperty(k)) {
-        target[k] = augmentation[k];
+  $R._ = {};
+  $R.accessor = function () {
+    var rFnc = $R(function () {
+      if (arguments.length) {
+        this.accessorValue = arguments[0];
       }
-    }
-    return target;
-  }
-  function identity(v) {
-    return $R(function(){return v;});
+      return this.accessorValue;
+    })
+    rFnc.context = rFnc;
+    return rFnc;
   }
   function wrap(v) {
-    return v && v._isReactive ? v : identity(v);
+    return v && (v._isReactive || v == $R._) ? v : $R(function () {return v});
   }
   var reactiveExtensions = {
+    toString: function () {
+      return this.fnc.toString();
+    },
     _isReactive: true,
     get: function() { return this.memo === undefined ? this.run() : this.memo;},
     run: function() {
-      var args = Array.prototype.slice.call(arguments);
-      return this.memo = this.fnc.apply(this.context, this.argumentList(args));
+      var unboundArgs = Array.prototype.slice.call(arguments);
+      return this.memo = this.fnc.apply(this.context, this.argumentList(unboundArgs));
     },
     notifyDependents: function() {
       var i=0, l=this.dependents.length;
       for (;i<l;i++) { this.dependents[i](); }
     },
-    signature: function() {
-      if (this._signature) { return this._signature };
-      var i=0,
-          names = this.fnc.toString()
-            .match(/^[\s\(]*function[^(]*\(([^)]*)\)/)[1]
-            .replace(/\/\/.*?[\r\n]|\/\*(?:.|[\r\n])*?\*\//g, '')
-            .replace(/\s+/g, '').split(',');
-          arity = names.length,
-          signature = {arity:arity, index:{}, name:names};
-
-      for(;i<arity;i++) { signature.index[names[i]] = i; }
-      return this._signature = signature;
-    },
-    register: function(keyOrObject, value) {
-      return arguments.length == 2 ? this._registerSingle(keyOrObject,value) : this._registerMany(keyOrObject);
-    },
-    _registerSingle: function(key,value) {
-      var reactiveValue = wrap(value),
-          signature = this.signature();
-      this.dependencies[signature.index[key]] = reactiveValue;
-      reactiveValue.dependents.push(this);
+    bindTo: function() {//test
+      var dependencies = Array.prototype.slice.call(arguments).map(wrap);
+      var newDependencies = _.difference(dependencies, this.dependencies);
+      var oldDependencies = _.difference(this.dependencies, dependencies);
+      _.each(newDependencies, function(dep){if (dep != $R._) { dep.addDependent(this)} }, this);
+      _.each(oldDependencies, function(dep){if (dep != $R._) { dep.removeDependent(this) } }, this);
+      this.dependencies = dependencies;
       return this;
     },
-    _registerMany: function(argObj) {
-      var k;
-      for(k in argObj) {
-        if (argObj.hasOwnProperty(k)) { this._registerSingle(k, argObj[k]); }
-      }
-      return this;
+    removeDependent: function(rFnc) {
+      this.dependents = _.without(this.dependents, rFnc);
     },
-    argumentList: function(fncArguments) {
-      var args = [],
-          signature = this.signature(),
-          i = 0, j = 0;
-      for(;i<signature.arity;i++) {
-        if (fncArguments[i] !== undefined) {
-          args.push(fncArguments[i]);
-        } else if (this.dependencies[i] !== undefined) {
-          args.push(this.dependencies[i].get());
+    addDependent: function(rFnc) {
+      this.dependents = _.union(this.dependents, rFnc);
+    },
+    argumentList: function(unboundArgs) {
+      var args = _.map(this.dependencies, function(dependency) {
+        if (dependency == $R._) {
+          return unboundArgs.shift();
+        } else if (dependency._isReactive) {
+          return dependency.get();
+        } else {
+          return undefined;
         }
-      }
-      return args;
+      });
+      return args.concat(unboundArgs);
     }
   }
   window.$R = $R;
