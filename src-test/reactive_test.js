@@ -37,7 +37,20 @@ ReactiveTest.prototype.testUpwardPropagation = function() {
   assertTrue(testFncRan);
   assertTrue(reactFncRan);
 }
+ReactiveTest.prototype.testContextPreservation = function() {
+  function Klass(){this.isKlass=true}
 
+  var thisWithinReactiveFunction = null;
+  var context = new Klass;
+  function foo() {
+    console.log("running!");
+    thisWithinReactiveFunction = this;
+  }
+  console.log("Supplying context:",context)
+  $R(foo, context)();
+
+  assertEquals(context, thisWithinReactiveFunction);
+}
 ReactiveTest.prototype.testMemoization = function() {
   var parentFnc = $R(function() {
         return parseInt(Math.random() * 10000);

@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-java -jar JsTestDriver.jar --config jsTestDriver.conf --tests all
+java -jar JsTestDriver.jar --config jsTestDriver.conf --tests testContextPreservation

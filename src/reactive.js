@@ -1,10 +1,11 @@
 (function() {
-  function $R(fnc) {
+  function $R(fnc, context) {
       var rf = function() {
         var v = rf.run.apply(rf,arguments);
         rf.notifyDependents();
         return v;
       };
+      rf.context = context || null;
       rf.fnc = fnc;
       rf.dependents = [];
       rf.dependencies = [];
@@ -30,7 +31,7 @@
     get: function() { return this.memo === undefined ? this.run() : this.memo;},
     run: function() {
       var args = Array.prototype.slice.call(arguments);
-      return this.memo = this.fnc.apply(this, this.argumentList(args));
+      return this.memo = this.fnc.apply(this.context, this.argumentList(args));
     },
     notifyDependents: function() {
       var i=0, l=this.dependents.length;
