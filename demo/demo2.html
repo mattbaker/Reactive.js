@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html class="no-js">
+    <head>
+        <meta charset="utf-8">
+        <title>Reactive SVG</title>
+        <link rel="stylesheet" href="css/normalize.min.css">
+        <link rel="stylesheet" href="css/main.css">
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.js"></script>
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.2/underscore-min.js"></script>
+        <script src="js/d3.min.js"></script>
+        <script src="../src/reactive.js"></script>
+        <style>
+            #viz{width:500px;height:300px;border:1px solid #DDD;}
+            path {fill:none; stroke:green;stroke-width:2px;}
+        </style>
+    </head>
+    <body>
+        <h1>Resize the window</h1>
+        <svg id="viz">
+        </svg>
+    </body>
+    <script>
+    $(function() {
+        var viz = d3.select("#viz");
+        var paths = viz.append("svg:g").attr("class", "my-paths");
+
+        var width = $R.state(0);
+        var height = $R.state(0);
+        var heightMinusHeader = $R(function (height, headerHeight) {
+            return height - headerHeight;
+        });
+        var margin = $R.state(10);
+        var months = $R.state(12 * 3);
+        var rate = $R.state(7);
+        var data = $R(function (months, rate) {
+            var p = 1000;
+            var r = rate/100;
+            var values = [];
+            for (var i=0; i < months; i++) {
+                values.push({x:i, y:p});
+                p *= (1 + r);
+            }
+            return values;
+        });
+        var yScale = $R(function (height, margin, data) {
+            return d3.scale.linear()
+                .domain(d3.extent(data, function(d){ return d.y}))
+                .range([height-margin, margin]);
+        });
+        var xScale = $R(function (width, margin, months) {
+            return d3.scale.linear()
+              .domain([0, months])
+              .range([margin, width-margin]);
+        });
+        var lineGenerator = $R(function (xScale, yScale) {
+            return d3.svg.line()
+                .x(function(d) { return xScale(d.x); })
+                .y(function(d) { return yScale(d.y); })
+        });
+        var svgPath = $R(function (lineGenerator, data) {
+            var path = paths.selectAll("path").data([data]);
+            path.enter()
+                .append("svg:path")
+                .attr("d", lineGenerator);
+            path.transition()
+                .duration(200)
+                .attr("d", lineGenerator);
+        });
+        var vizDimensions = $R(function (width, height) {
+            viz.transition()
+                .duration(200)
+                .style("width", width)
+                .style("height", height);
+        });
+
+
+        //Bind our data
+        heightMinusHeader.bindTo(height, $("h1").outerHeight(true));
+        yScale.bindTo(heightMinusHeader, margin, data);
+        xScale.bindTo(width, margin, months);
+        lineGenerator.bindTo(xScale, yScale);
+        svgPath.bindTo(lineGenerator, data);
+        vizDimensions.bindTo(width,heightMinusHeader);
+
+        width($(window).width());
+        height($(window).height());
+        data.bindTo(months, rate)();
+
+        //Make available in our console
+        window.chart = {width:width, height:heightMinusHeader, margin:margin, months:months, rate:rate}
+
+        $(window).on("resize", function () {
+            width($(window).width());
+            height($(window).height());
+        });
+
+    });
+    </script>
+</html>

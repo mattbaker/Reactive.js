@@ -1,39 +1,215 @@
-#This is an exploration
-This is on github just to throw some ideas around, but what you'll see here is me playing around with some concepts and syntax for dealing with reactive functions.
+#Reactive.js
+##A (really) short intro
+Reactive.js will augment ("reactify") a given Javascript function so that it may track dependencies on other reactive functions. You might think of a reactive function as representing a cell in a spreadsheet. Spreadsheet cells can reference each other, depend on each other, and cells update their values automatically when one of their dependent cells change. Reactive functions can do this too. To be clear, they're still Javascript functions, just with a little "extra".
 
-If it ever reaches a useful point, this will turn into a real project. Docs, examples, and everything! I swear.
 
-#A small reactive framework
-ReactJS "reactifies" Javascript function objects, allowing you to create an auto-updating dependency graph of functions. Reactive functions behave just like normal ones unless their arguments are bound to other reactives.
+##Reactive Programming in 60 seconds
 
-	function foo() {
-		return 1000;
-	}
-	function mult(x) {
-		multRan = true;
-		return x * 2;
-	}
-	var rFoo = $R(foo),
-		rMult = $R(mult).register({x:rFoo}),
-		multRan = false;
+In Reactive programming it's easier to think of our variables as _expressions_, not as _assignments_. In order to understand the difference, consider the statement "`a = b + c`".
 
-	console.assert(multRan == false);
-	rFoo();
-	console.assert(multRan == true);
-	console.assert(2000 == rMult());
-	console.assert(10 == rMult(5));
+There are two ways to look at this. One is the way we are used to, _"`a` is **assigned to** the sum of `b` and `c`, at the instant this is interpreted"_, which is what we'd expect in Javascript or any other imperative language.
 
-Modern web applications often represent one enormous dependency graph of UI elements and state. ReactJS essentially implements the Observer pattern on Javascript's Function type.
+But we could also read it as _"`a` **represents** the sum of `b` and `c`, at any point in time."_ This interpretation is not really so strange, that's exactly how we would expect things to work in a spreadsheet. If we had a spreadsheet cell containing the expression  "`=B+C`", the value in that cell would change as the cells B and C change, wouldn't it?
 
-##Todo
-Better README, examples. Add ability to "reactify" objects and their properties:
+Reactive programming means we describe our program using the second interpretation. We don't assign variables, we _express_ them, and they don't represent discrete values, they represent a value that _changes over time_.
 
-	//Clock
-	var now = $R(function(){ return (new Date).toString(); }),
-		timeElt = document.getElementById("time");
-	$R(timeElt, "innerHTML").equals(now);
+##Reactive programming in Javascript
+Obviously Javascript is not a reactive language, but there are advantages to being able to express ourselves reactively. Reactive programming can be immensely useful in describing systems of equations, complicated UIs, and data visualizations to name a few.
 
-###Note
-It's true that Function's toString() is implementation dependent according to the ECMA Script spec, so the fancy bindArguments is not guaranteed to work. I included it because I liked it, and it seems to work as expected with all the implementations I've tested.
+So let's reexamine our earlier statement about reactive programming, then we'll see how Javascript fits into the picture (and how Reactive.js fits into Javascript).
 
-And yes, I seriously parsed Function's toString. You probably think it's hideous, but it's the only reflection I've got. And yes, I know it's not necessary.
+> "We don't assign variables, we _express_ them..."
+
+In Javascript, `a = b + c` assigns a _value_. For us to accomplish our goal, however, we need to describe what `a` represents using an **expression** (like `=B+C` in a spreadsheet). Javascript *does* have expressions, they're called functions! So in reactive programming a given value, like `a` in `a = b + c` is expressed as a function:
+
+```javascript
+	var a = function (b,c) { return b + c } // a = b + c
+```
+
+This brings us to our first conclusion.
+
+### Conclusion 1: Our variables are expressions, so our variables are functions.
+
+Now lets consider the rest of the sentence:
+> "…and they don't represent discrete values, they represent a value that _changes over time_"
+
+When you write `=B+C` in a spreadsheet, your spreadsheet program notes that your cell is relying on the values of B and C. It starts to assemble a dependency graph internally that it can use to keep track of changes. It traverses that graph when B or C change, updating A in the process. Most importantly, we don't have to write a "calculate all" function because the spreadsheet program handles that for us.
+
+Unfortunately Javascript won't magically track dependencies, so it's not enough to describe our variables as expressions, we also need to tell our expressions what they _depend_ on. Only then can they be smart enough to update each other automatically
+
+### Conclusion 2: We have to tell our expressions what they depend on.
+
+When we combine our two conclusions, we arrive at the following:
+
+> Our variables are expressions, so our variables are **functions**. And we have to tell our expressions what they depend on, so that means **we have to tell our functions what they depend on**.
+
+Fortunately for you, Reactive.js does just that.
+
+
+##Using Reactive.js
+
+At its core, Reactive.js is just a single method, `$R()`. `$R()` accepts a function and returns you an augmented version of that function that is meant to represent a value in your program. How is it augmented exactly? "Reactive functions" gain a new method called `.bindTo()`. `bindTo()` accepts one or more reactive functions, and binds them to your function's arguments via partial application:
+
+```javascript
+	/* Don't worry about $R.state yet, it just returns a
+	 * reactive function that gets and sets internal
+	 * state (handy for literal values) — more on that later.
+	 */
+
+	//A = B + C
+	var reactiveA = $R(function (b, c) { return b + c });
+	var reactiveB = $R.state(2);
+	var reactiveC = $R.state(1);
+	reactiveA.bindTo(reactiveB, reactiveC);
+
+	reactiveA();   //-> 3
+	reactiveB(5);  //Set reactiveB to 5
+	reactiveC(10); //Set reactiveC to 10
+	reactiveA();   //-> 15
+```
+
+That's it. As you can see, Reactive.js asks you to _express values as functions_ and gives you the tools you need to _tell those functions how they depend on each other_. In the example above, any time `reactiveA` or `reactiveB` change, `reactiveC` will change too. `reactiveC` isn't assigned `a+b`, it _represents_ `a+b` at any moment in time.
+
+###An example with time
+
+Since we talk about variables representing a value that changes over time, let's actually create variables that depend on, well, a value that changes over time.
+
+```javascript
+	var now = $R(function (date) { return date });
+
+	//Update "now" every millisecond
+	setInterval(function () { now(new Date) }, 1);
+
+	var currentMillisecond = $R(function (date) {
+		return date.getMilliseconds() ;
+	}).bindTo(now);
+
+	var dayOfTheWeek = $R(function (date) {
+		var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+		return days[date.getDay()];
+	}).bindTo(now);
+
+	var isItSunday = $R(function (day) {
+		return day === 'Sun';
+	}).bindTo(dayOfTheWeek);
+```
+
+We can log out any of our reactive variables at any time and we'll see that they're staying current as the value of `now` is updated.
+
+```javascript
+	console.log(currentMillisecond()); //-> 700
+	console.log(currentMillisecond()); //-> 800
+	console.log(currentMillisecond()); //-> 900
+	console.log(dayOfTheWeek()); //-> Thu
+	console.log(isItSunday()); //-> false
+
+	//And that Sunday...
+	console.log(currentMillisecond()); //-> 400
+	console.log(dayOfTheWeek()); //-> Sun
+	console.log(isItSunday()); //-> true
+```
+
+###Values-as-functions are purely conceptual
+Not every value in your code is represented as something you can return. As one example, we can still think of the content of the div in the following example as a single value:
+
+```html
+	<div id="time"></div>
+```
+
+```javascript
+	var timeDivContents = $R(function (now) {
+		$("#time").html(now.toString());
+	}).bindTo(now);
+```
+
+We didn't create a function that "updates the contents of the time div", we're saying this function _represents_ the contents of the time div. As the setInterval statement updates "now" every millisecond our div will update too, all on its own.
+
+###Reactive.js is minimal
+Reactive.js seeks to be as minimal and unobtrusive as possible. Because it operates on, and returns, normal Javascript functions, it's _very_ easy to integrate into existing code. If you start writing "reactive" code, any existing function can be integrated as a dependency by creating a reactive version of it with `$R()`.
+
+##Reactive.js API
+####$R(_function[, context]_) &#10145; _ReactiveFunction_
+`$R()` takes a function and optional context. If supplied a context, Reactive.js will ensure that your function runs with `this` bound to `context`.
+
+`$R()` returns a new function that is functionally identical, but with augmentation. In short, `$R()` returns a "reactified" version of your function, giving it the ability to participate in the dependency graph of reactive values in your application. A reactive function may bind (via `.bindTo()`) its arguments to other reactive functions, and vice versa.
+
+```javascript
+	//Unbound reactive functions are functionally identical
+	var sum = function (a,b) { return a + b };
+	var reactiveSum = $R(sum);
+	reactiveSum(1,2); //-> 3
+```
+
+####rFnc.**bindTo**(_ReactiveFunction_,…) &#10145; _rFnc_
+When you supply a function to `$R()` it returns a new function with the addition of a **`bindTo()`** method. `bindTo()` takes one or more reactive functions as its arguments. The provided functions are bound to the arguments in your function (partial application). When those functions' values update they will be passed as the arguments to your function, which will re-calculate itself (and pass its value to any other functions that depend on _it_ in turn).
+
+```javascript
+	var x = $R(function (n) { return n });
+	var x2 = $R(function (x) { return x * x }).bindTo(x);
+
+	x(2);
+	x2(); //->4
+	x(4);
+	x2(); //->16
+```
+
+`bindTo()` can also accept literal values. It will bind them as you would expect:
+
+```javascript
+	var greet = $R(function (name) {
+		return "Hello "+ name
+	}).bindTo("Jane");
+	console.log(greet()); //-> "Hello Jane"
+```
+
+`bindTo()` can accept a mix of literals and reactive functions.
+
+####$R._
+`$R._` is a special value that represents a "gap" when binding up the arguments in your reactive function. For example, if we want to bind the *first* and *third* arguments of a function, but *not* the second, we would say:
+
+```javascript
+	var reactiveFnc = $R(function (a,b,c) { return a + b + c });
+	reactiveFnc.bindTo(myA, $R._, myC);
+```
+
+We bound `a` and `c` in our reactive function to `myA` and `myC`, so now `reactiveFnc` only accepts  one argument, the argument for `b`.
+
+####$R.state(_initial_) &#10145; _ReactiveFunction_
+
+Since Reactive.js uses functions, not variables, to represent values, it's helpful to have a concise way to represent state. `$R.state` returns a reactive function that gets and sets internal state.
+
+If you call the function without an argument, it simply returns the currently saved value. If you provide an argument, the reactive function will store that argument as its new state value. This is how you'd replace `var a` with `$R.state()`:
+
+```javascript
+	//With var
+	var a = 3;
+	console.log(a); //->3
+	a = 4;
+	console.log(a); //->4
+
+	//With $R.state
+	var a = $R.state(3);
+	console.log(a()); //->3
+	a(4)
+	console.log(a()); //->4
+```
+
+`$R.state` is a convenient way to represent reactive values in your application that will only change by assignment (much like typing a literal number into a spreadsheet composed of many calculations).
+
+The function returned by $R.state is, of course, reactive. They can bind to, and be bound to, other reactive functions.
+
+
+##Notes on internals
+There are a few things to throw out there for the curious:
+
+###Values are cached
+Reactive functions cache their values when they are executed. Consider a function X that depends on functions Y and Z (which have already run). If we run function X if will ask for the values of it dependencies X and Y, however _X and Y will not be run because they have not changed_. This is important for large systems of interdependent reactive functions. And, of course, if a dependency's value changes its cached value is updated and any downstream dependent values will execute and update their cached values too.
+
+###Functions are not evaluated redundantly
+Reactive.js performs a topological sort of the dependency graph, meaning it assembles a list of functions to evaluate in-order. Reactive.js is smart enough to ensure that a function, even if it is a dependency for several others, will only be executed once.
+
+###Dependency graph traversal is recursive
+In a worst case scenario, with a chain of dependent nodes thousands in number, we can exceed the size of the call stack. You'd *really* have to try at this to do it, but the limitation is out there. If it's truly an issue the traversal function can be swapped for a loop in the future.
+
+###State is tough
+State doesn't fit into the whole "functional reactive" paradigm very neatly. Simple operations like incrementing a $R.state value by one would require two graph traversals, e.g. `myVal(myVal() + 1)`. As Reactive.js matures, we'll finds better ways to address these problems.

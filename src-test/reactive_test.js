@@ -92,12 +92,15 @@ ReactiveTest.prototype.testUnBinding = function() {
   var cRan = 0;
   var dependencyA = $R(function() {
     aRan++;
+    return $R.empty;//effectively disables memoization, maybe not the best way to write this test
   })
   var dependencyB = $R(function() {
     bRan++;
+    return $R.empty;
   })
   var dependencyC = $R(function() {
     cRan++;
+    return $R.empty;
   })
   var rf = $R(function(x,y) {});
   rf.bindTo(dependencyA, dependencyC);
@@ -109,7 +112,7 @@ ReactiveTest.prototype.testUnBinding = function() {
   assertEquals(2, cRan);
 }
 ReactiveTest.prototype.testAccessor = function() {
-  var foo = $R.accessor();
+  var foo = $R.state();
   var i = 0;
   var rf = $R(function(x){ i++; });
   rf.bindTo(foo);
@@ -121,4 +124,33 @@ ReactiveTest.prototype.testAccessor = function() {
   rf();
 
   assertEquals(4, i);
+}
+ReactiveTest.prototype.testAccessorInitialValue = function() {
+  var foo = $R.state(10);
+  var bar = $R.state();
+  assertEquals(10, foo());
+  assertUndefined(bar());
+}
+ReactiveTest.prototype.testTopologicalSort = function() {
+  var aRan = 0;
+  var bRan = 0;
+  var cRan = 0;
+
+  var a = $R(function(){aRan++});
+  var b = $R(function(x){bRan++});
+  var c = $R(function(x,y){cRan++});
+  b.bindTo(a);
+  c.bindTo(a,b);
+  a();
+  assertEquals(1, aRan);
+  assertEquals(1, bRan);
+  assertEquals(1, cRan);
+}
+ReactiveTest.prototype.testUniqueToString = function() {
+  var a = $R(function(){});
+  var b = $R(function(){});
+  var dict = {};
+  dict[a] = true;
+  dict[b] = true;
+  assertEquals(2, _.size(dict));
 }

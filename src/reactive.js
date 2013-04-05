@@ -1,50 +1,56 @@
 (function() {
+  var defaultContext = this;
   function $R(fnc, context) {
       var rf = function() {
-        var v = rf.run.apply(rf,arguments);
-        rf.notifyDependents();
+        var dirtyNodes = topo(rf);
+        var v = _.first(dirtyNodes).run.apply(rf, arguments);
+        _.chain(dirtyNodes).rest().invoke("run");
         return v;
       };
-      rf.context = context || {};
+      rf.id = _.uniqueId();
+      rf.context = context || defaultContext;
       rf.fnc = fnc;
       rf.dependents = [];
       rf.dependencies = [];
-      return _.extend(rf, reactiveExtensions);
+      rf.memo = $R.empty;
+      return _.extend(rf, reactiveExtensions, $R.pluginExtensions);
   }
   $R._ = {};
-  $R.accessor = function () {
+  $R.empty = {};
+  $R.state = function (initial) {
+    //TODO(matt): Don't traverse dependency graph for reads, only writes
     var rFnc = $R(function () {
       if (arguments.length) {
-        this.accessorValue = arguments[0];
+        this.val = arguments[0];
       }
-      return this.accessorValue;
+      return this.val;
     })
     rFnc.context = rFnc;
+    rFnc.val = initial;
     return rFnc;
   }
-  function wrap(v) {
-    return v && (v._isReactive || v == $R._) ? v : $R(function () {return v});
-  }
+  $R.pluginExtensions = {}
   var reactiveExtensions = {
-    toString: function () {
-      return this.fnc.toString();
-    },
     _isReactive: true,
-    get: function() { return this.memo === undefined ? this.run() : this.memo;},
+    toString: function () { return this.id + ":" + this.fnc.toString() },
+    get: function() { return this.memo === $R.empty ? this.run() : this.memo },
     run: function() {
       var unboundArgs = Array.prototype.slice.call(arguments);
       return this.memo = this.fnc.apply(this.context, this.argumentList(unboundArgs));
     },
-    notifyDependents: function() {
-      var i=0, l=this.dependents.length;
-      for (;i<l;i++) { this.dependents[i](); }
-    },
-    bindTo: function() {//test
+    bindTo: function() {
       var dependencies = Array.prototype.slice.call(arguments).map(wrap);
-      var newDependencies = _.difference(dependencies, this.dependencies);
-      var oldDependencies = _.difference(this.dependencies, dependencies);
-      _.each(newDependencies, function(dep){if (dep != $R._) { dep.addDependent(this)} }, this);
-      _.each(oldDependencies, function(dep){if (dep != $R._) { dep.removeDependent(this) } }, this);
+
+      _.chain(dependencies)
+        .difference(this.dependencies)
+        .filter(function (f) { return f !== $R._})
+        .invoke("addDependent", this);
+
+      _.chain(this.dependencies)
+        .difference(dependencies)
+        .filter(function (f) { return f !== $R._})
+        .invoke("removeDependent", this);
+
       this.dependencies = dependencies;
       return this;
     },
@@ -56,7 +62,7 @@
     },
     argumentList: function(unboundArgs) {
       var args = _.map(this.dependencies, function(dependency) {
-        if (dependency == $R._) {
+        if (dependency === $R._) {
           return unboundArgs.shift();
         } else if (dependency._isReactive) {
           return dependency.get();
@@ -67,5 +73,19 @@
       return args.concat(unboundArgs);
     }
   }
+  //Private
+  function topo(rootFnc) {
+    var explored = {};
+    function search(rFnc) {
+      if (explored[rFnc]) { return [] }
+      explored[rFnc] = true;
+      return _.map(rFnc.dependents, search).concat(rFnc);
+    }
+    return _.chain(search(rootFnc)).flatten().reverse().value();
+  }
+  function wrap(v) {
+    return v && (v._isReactive || v == $R._) ? v : $R(function () {return v});
+  }
+
   window.$R = $R;
 })();

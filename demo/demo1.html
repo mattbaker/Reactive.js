@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html class="no-js">
+    <head>
+        <meta charset="utf-8">
+        <title>Reactive Demo 2</title>
+        <link rel="stylesheet" href="css/normalize.min.css">
+        <link rel="stylesheet" href="css/main.css">
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.js"></script>
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.2/underscore-min.js"></script>
+        <script src="../src/reactive.js"></script>
+        <style>
+            .area-box{background:#eee;position:absolute;top:0;left:0;width:0;height:0;}
+        </style>
+    </head>
+    <body>
+        <div class='area-box'>
+            <div class="x"></div>
+            <div class="y"></div>
+            <div class="xy"></div>
+        </div>
+    </body>
+    <script>
+    $(function() {
+        var x = $R.state(0);
+        var y = $R.state(0);
+        var area = $R(function (x, y) {
+            return x * y;
+        });
+        var areaBox = $R(function (x, y) {
+            $(".area-box").css({width:x, height:y})
+        });
+        var xLabel = $R(function (x) {
+            $(".x").html("X:"+x);
+        });
+        var yLabel = $R(function (y) {
+            $(".y").html("Y:"+y);
+        });
+        var areaLabel = $R(function (area) {
+            $(".xy").html("Area:"+area);
+        });
+
+        area.bindTo(x, y);
+        areaBox.bindTo(x, y);
+        xLabel.bindTo(x);
+        yLabel.bindTo(y);
+        areaLabel.bindTo(area);
+
+        $(document).on("mousemove", function (e) {
+            x(e.pageX);
+            y(e.pageY);
+        });
+    });
+    </script>
+</html>
