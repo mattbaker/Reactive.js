@@ -18,7 +18,6 @@
   $R._ = {};
   $R.empty = {};
   $R.state = function (initial) {
-    //TODO(matt): Don't traverse dependency graph for reads, only writes
     var rFnc = $R(function () {
       if (arguments.length) {
         this.val = arguments[0];
@@ -32,7 +31,7 @@
   $R.pluginExtensions = {}
   var reactiveExtensions = {
     _isReactive: true,
-    toString: function () { return this.id + ":" + this.fnc.toString() },
+    toString: function () { return this.fnc.toString() },
     get: function() { return this.memo === $R.empty ? this.run() : this.memo },
     run: function() {
       var unboundArgs = Array.prototype.slice.call(arguments);
@@ -77,8 +76,8 @@
   function topo(rootFnc) {
     var explored = {};
     function search(rFnc) {
-      if (explored[rFnc]) { return [] }
-      explored[rFnc] = true;
+      if (explored[rFnc.id]) { return [] }
+      explored[rFnc.id] = true;
       return _.map(rFnc.dependents, search).concat(rFnc);
     }
     return _.chain(search(rootFnc)).flatten().reverse().value();

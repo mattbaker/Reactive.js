@@ -146,11 +146,7 @@ ReactiveTest.prototype.testTopologicalSort = function() {
   assertEquals(1, bRan);
   assertEquals(1, cRan);
 }
-ReactiveTest.prototype.testUniqueToString = function() {
-  var a = $R(function(){});
-  var b = $R(function(){});
-  var dict = {};
-  dict[a] = true;
-  dict[b] = true;
-  assertEquals(2, _.size(dict));
+ReactiveTest.prototype.testToString = function() {
+  var a = $R(function (){ return "foo"; });
+  assertEquals('function (){ return "foo"; }', a.toString());
 }
