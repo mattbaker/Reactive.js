@@ -48,14 +48,12 @@ Fortunately for you, Reactive.js does just that.
 
 ##Using Reactive.js
 
-At its core, Reactive.js is just a single method, `$R()`. `$R()` accepts a function and returns you an augmented version of that function that is meant to represent a value in your program. How is it augmented exactly? "Reactive functions" gain a new method called `.bindTo()`. `bindTo()` accepts one or more reactive functions, and binds them to your function's arguments via partial application:
+At its core, Reactive.js is just a single method, `$R()`. `$R()` accepts a function and returns you an augmented version of that function that is meant to represent a value in your program. How is it augmented exactly? "Reactive functions" gain a new method called `.bindTo()`. `bindTo()` accepts one or more reactive functions, and binds them to your function's arguments via partial application.
+
+Don't worry about $R.state yet, it just returns a reactive function that gets and sets internal state (handy for literal values) — more on that later.
+
 
 ```javascript
-	/* Don't worry about $R.state yet, it just returns a
-	 * reactive function that gets and sets internal
-	 * state (handy for literal values) — more on that later.
-	 */
-
 	//A = B + C
 	var reactiveA = $R(function (b, c) { return b + c });
 	var reactiveB = $R.state(2);
