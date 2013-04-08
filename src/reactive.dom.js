@@ -1,9 +1,6 @@
 (function() {
   if (!$R) { return; }
   $R.dom = function(inputEl) {
-    //You could detect whether this function is being
-    //called as a ctor or function and do it all in here,
-    //but it seems unnecessary.
     return new $R.Dom(inputEl);
   }
   $R.Dom = function (inputEl) {
@@ -35,6 +32,7 @@
       $(input).on("change", function () {
         rf(sanitizer(this.value));
       })
+      return this;
     }
   });
 
