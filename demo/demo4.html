@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html class="no-js">
+  <head>
+      <meta charset="utf-8">
+      <title>Reactive Spreadsheet</title>
+      <link rel="stylesheet" href="css/normalize.min.css">
+      <link rel="stylesheet" href="css/main.css">
+      <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.js"></script>
+      <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.2/underscore-min.js"></script>
+      <script src="js/d3.min.js"></script>
+      <script src="../src/reactive.js"></script>
+      <script src="../src/reactive.dom.js"></script>
+      <style>
+      body {padding:25px;}
+      table.excel {
+        width: 300px;
+        border: 1px solid #dddddd;
+        border-spacing: 0;
+        border-collapse: collapse;
+        line-height: 16px;
+        font-size: 16px; }
+        table.excel.static, table.excel.reactive {
+          display: inline-block; }
+        table.excel th, table.excel td {
+          border: 1px solid #dddddd;
+          vertical-align: middle;
+          padding: 6px 10px; }
+        table.excel th {
+          background: #eee;
+          width: 45%; }
+          table.excel th:first-child {
+            width: 10%; }
+        table.excel th, table.excel td.row-number {
+          background: #eee;
+          font-weight: bold;
+          text-align: center; }
+        table.excel td input {
+          text-align: center;
+          width: 30%;
+          font-size: 16px;
+          margin: 0; }
+        table.excel.reactive .a1 {
+          text-align: center;
+          padding: 3px 10px; }
+      </style>
+
+      <script>
+      $(function() {
+        $(".excel.reactive").find("input").focus();
+      });
+      $(function() {
+        var $table = $(".excel.reactive");
+
+        var a1 = $R.state(4).bindToInput($table.find("input"), function(v){return parseInt(v)});
+        var b1 = $R(function(a1) { return a1 + 1}).bindTo(a1);
+        var a2 = $R(function(b1) { return b1 * 2}).bindTo(b1);
+        var b2 = $R(function(b1, a2) { return b1 + a2}).bindTo(b1, a2);
+
+        $R.dom($table.find(".b1")).bindAttributeTo("innerHTML", b1);
+        $R.dom($table.find(".a2")).bindAttributeTo("innerHTML", a2);
+        $R.dom($table.find(".b2")).bindAttributeTo("innerHTML", b2);
+      });
+
+      </script>
+  </head>
+<body>
+  <table class="excel static" style="margin-right:25px;">
+      <thead>
+        <tr>
+          <th>
+          <th>A</th>
+          <th>B</th>
+      <tbody>
+        <tr>
+          <td class="row-number">1
+          <td>4
+          <td>=$A1+1
+        <tr>
+          <td class="row-number">2
+          <td>=$B1*2
+          <td>=$B1+$A2
+    </table>
+
+    <table class="excel reactive">
+    <thead>
+      <tr>
+        <th></th>
+        <th>A</th>
+        <th>B</th>
+    <tbody>
+      <tr>
+        <td class="row-number">1</td>
+        <td class="a1"><input type="text" value="4">
+        <td class="b1">5
+      </tr>
+      <tr>
+        <td class="row-number">2
+        <td class="a2">10
+        <td class="b2">15
+      </tr>
+    </tbody>
+  </table>
+</body>
