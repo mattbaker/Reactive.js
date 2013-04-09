@@ -211,3 +211,7 @@ In a worst case scenario, with a chain of dependent nodes thousands in number, w
 
 ###State is tough
 State doesn't fit into the whole "functional reactive" paradigm very neatly. Simple operations like incrementing a $R.state value by one would require two graph traversals, e.g. `myVal(myVal() + 1)`. As Reactive.js matures, we'll finds better ways to address these problems.
+
+##Where is it being used?
+
+ * [Wealthfront.com](https://www.wealthfront.com/plan?values=6%7C50000%7C8%7C8.0%7C25%7C50000%7C100000%7CS%7Cfalse%7Cfalse%7CD%7Cgain%7CkeepAll%7CB), managing visualizations, calculations and UI synchronization
