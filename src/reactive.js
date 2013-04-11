@@ -1,10 +1,75 @@
-(function() {
+(function(exports) {
+  var _uniqueId = 0;
+  function _(coll) {
+    this._ = coll;
+  }
+  _.extend = function(obj) {
+    var args = [].slice.call(arguments, 1);
+    args.forEach(function(arg) {
+      for (var prop in arg) {
+        obj[prop] = arg[prop];
+      }
+    });
+    return obj;
+  };
+  // static
+  _.extend(_, {
+    difference: function(a, b) {
+      return a.filter(function(e) {
+        return b.indexOf(e) === -1;
+      });
+    },
+    first: function(a) {
+      return a[0];
+    },
+    flatten: function(arr) {
+      var result = [];
+      arr.forEach(function(e) {
+        if (Array.isArray(e)) {
+          result.push.apply(result, _.flatten(e));
+        } else {
+          result.push(e);
+        }
+      });
+      return result;
+    },
+    invoke: function(a, method) {
+      var args = [].slice.call(arguments, 2);
+      a.forEach(function(e) {
+        e[method].apply(e, args);
+      });
+    },
+    rest: function(a) {
+      return a.slice(1);
+    },
+    uniqueId: function() {
+      return String(++_uniqueId);
+    }
+  });
+  // methods that are chainable
+  ['difference', 'flatten', 'invoke', 'rest'].forEach(function(m) {
+    var method = _[m];
+    _.prototype[m] = function() {
+      var args = [].slice.call(arguments, 0);
+      this._ = method.apply(method, [this._].concat(args));
+      return this;
+    }
+  });
+  // Array.prototype methods
+  ['concat', 'filter', 'map', 'reverse'].forEach(function(m) {
+    _.prototype[m] = function() {
+      this._ = Array.prototype[m].apply(this._, arguments);
+      return this;
+    }
+  });
+  _.prototype.value = function() { return this._; };
+
   var defaultContext = this;
   function $R(fnc, context) {
       var rf = function() {
         var dirtyNodes = topo(rf);
         var v = _.first(dirtyNodes).run.apply(rf, arguments);
-        _.chain(dirtyNodes).rest().invoke("run");
+        new _(dirtyNodes).rest().invoke("run");
         return v;
       };
       rf.id = _.uniqueId();
@@ -40,12 +105,12 @@
     bindTo: function() {
       var dependencies = Array.prototype.slice.call(arguments).map(wrap);
 
-      _.chain(dependencies)
+      new _(dependencies)
         .difference(this.dependencies)
         .filter(function (f) { return f !== $R._})
         .invoke("addDependent", this);
 
-      _.chain(this.dependencies)
+      new _(this.dependencies)
         .difference(dependencies)
         .filter(function (f) { return f !== $R._})
         .invoke("removeDependent", this);
@@ -54,13 +119,15 @@
       return this;
     },
     removeDependent: function(rFnc) {
-      this.dependents = _.without(this.dependents, rFnc);
+      this.dependents = this.dependents.filter(function(prop) {
+        return prop !== rFnc;
+      });
     },
     addDependent: function(rFnc) {
-      this.dependents = _.union(this.dependents, rFnc);
+      this.dependents = [rFnc].concat(this.dependents);
     },
     argumentList: function(unboundArgs) {
-      var args = _.map(this.dependencies, function(dependency) {
+      return this.dependencies.map(function(dependency) {
         if (dependency === $R._) {
           return unboundArgs.shift();
         } else if (dependency._isReactive) {
@@ -68,8 +135,7 @@
         } else {
           return undefined;
         }
-      });
-      return args.concat(unboundArgs);
+      }).concat(unboundArgs);
     }
   }
   //Private
@@ -78,13 +144,18 @@
     function search(rFnc) {
       if (explored[rFnc.id]) { return [] }
       explored[rFnc.id] = true;
-      return _.map(rFnc.dependents, search).concat(rFnc);
+      return rFnc.dependents.map(search).concat(rFnc);
     }
-    return _.chain(search(rootFnc)).flatten().reverse().value();
+
+    return new _(search(rootFnc)).flatten().reverse().value();
   }
   function wrap(v) {
     return v && (v._isReactive || v == $R._) ? v : $R(function () {return v});
   }
 
-  window.$R = $R;
-})();
+  if (typeof module !== 'undefined') {
+    module.exports = $R;
+  } else {
+    exports.$R = $R;
+  }
+}(this));
