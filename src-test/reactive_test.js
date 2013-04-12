@@ -86,32 +86,26 @@ ReactiveTest.prototype.testPartialBinding = function() {
   reactiveSimpleFnc.bindTo($R._, $R(function(){return 7}), $R._);
   assertEquals("173", reactiveSimpleFnc(1, 3));
 }
-ReactiveTest.prototype.testUnBinding = function() {
-  var aRan = 0;
-  var bRan = 0;
-  var cRan = 0;
-  var dependencyA = $R(function() {
-    aRan++;
-    return $R.empty;//effectively disables memoization, maybe not the best way to write this test
-  })
-  var dependencyB = $R(function() {
-    bRan++;
-    return $R.empty;
-  })
-  var dependencyC = $R(function() {
-    cRan++;
-    return $R.empty;
-  })
+ReactiveTest.prototype.testRebinding = function() {
+  var dependencyA = $R(function() {});
+  var dependencyB = $R(function() {});
+  var dependencyC = $R(function() {});
+
   var rf = $R(function(x,y) {});
+
   rf.bindTo(dependencyA, dependencyC);
-  rf();
+  assertEquals([dependencyA, dependencyC], rf.dependencies)
+  assertEquals([rf], dependencyA.dependents)
+  assertEquals([], dependencyB.dependents)
+  assertEquals([rf], dependencyC.dependents)
+
   rf.bindTo(dependencyB, dependencyC);
-  rf();
-  assertEquals(1, aRan);
-  assertEquals(1, bRan);
-  assertEquals(2, cRan);
+  assertEquals([dependencyB, dependencyC], rf.dependencies)
+  assertEquals([], dependencyA.dependents)
+  assertEquals([rf], dependencyB.dependents)
+  assertEquals([rf], dependencyC.dependents)
 }
-ReactiveTest.prototype.testAccessor = function() {
+ReactiveTest.prototype.testState = function() {
   var foo = $R.state();
   var i = 0;
   var rf = $R(function(x){ i++; });
@@ -125,7 +119,7 @@ ReactiveTest.prototype.testAccessor = function() {
 
   assertEquals(4, i);
 }
-ReactiveTest.prototype.testAccessorInitialValue = function() {
+ReactiveTest.prototype.testStateInitialValue = function() {
   var foo = $R.state(10);
   var bar = $R.state();
   assertEquals(10, foo());
