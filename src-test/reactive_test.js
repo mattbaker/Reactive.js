@@ -142,5 +142,5 @@ ReactiveTest.prototype.testTopologicalSort = function() {
 }
 ReactiveTest.prototype.testToString = function() {
   var a = $R(function (){ return "foo"; });
-  assertEquals('function (){ return "foo"; }', a.toString());
+  assertEquals('function(){return"foo";}', a.toString().replace(/\s/g,''));
 }
