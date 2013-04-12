@@ -15,7 +15,7 @@
       rf.dependents = [];
       rf.dependencies = [];
       rf.memo = $R.empty;
-      return extend(rf, reactiveExtensions, $R.pluginExtensions);
+      return $R.extend(rf, reactiveExtensions, $R.pluginExtensions);
   }
   $R._ = {};
   $R.empty = {};
@@ -30,7 +30,17 @@
     rFnc.val = initial;
     return rFnc;
   }
+  $R.extend = function(o) {
+    var extensions = Array.prototype.slice.call(arguments, 1);
+    extensions.forEach(function (extension) {
+      if (extension) {
+        for (var prop in extension) { o[prop] = extension[prop] }
+      }
+    });
+    return o;
+  };
   $R.pluginExtensions = {}
+
   var reactiveExtensions = {
     _isReactive: true,
     toString: function () { return this.fnc.toString() },
@@ -92,16 +102,4 @@
   function wrap(v) {
     return v && (v._isReactive || v == $R._) ? v : $R(function () {return v});
   }
-
-  function extend(o) {
-    var extensions = Array.prototype.slice.call(arguments, 1);
-    extensions.forEach(function (extension) {
-      if (extension) {
-        for (var prop in extension) { o[prop] = extension[prop] }
-      }
-    });
-    return o;
-  };
-
-
 })();

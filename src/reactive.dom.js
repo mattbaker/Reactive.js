@@ -1,4 +1,6 @@
 (function() {
+  var identity = function (v) { return v };
+
   if (!$R) { return; }
   $R.dom = function(inputEl) {
     return new $R.Dom(inputEl);
@@ -8,7 +10,7 @@
   }
   $R.Dom.prototype = {
     bindAttributeTo: function (attribute, rf, formatter) {
-      formatter = formatter || _.identity
+      formatter = formatter || identity
       $R(function(v) {
         if (this.el[0]) { this.el[0][attribute] = formatter(v) };
       }, this).bindTo(rf);
@@ -25,9 +27,9 @@
     }
   }
 
-  _.extend($R.pluginExtensions, {
+  $R.extend($R.pluginExtensions, {
     bindToInput: function(input, sanitizer) {
-      sanitizer = sanitizer || _.identity;
+      sanitizer = sanitizer || identity;
       var rf = this;
       $(input).on("change", function () {
         rf(sanitizer(this.value));
