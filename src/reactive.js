@@ -85,7 +85,11 @@
     }
   }
 
-  window.$R = $R;
+  if (typeof module !== 'undefined') {
+    module.exports = $R;
+  } else {
+    defaultContext.$R = $R;
+  }
 
   //Private
   function topo(rootFnc) {
