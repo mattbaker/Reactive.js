@@ -45,6 +45,9 @@
     _isReactive: true,
     toString: function () { return this.fnc.toString() },
     get: function() { return this.memo === $R.empty ? this.run() : this.memo },
+    property: function(name) {
+      return $R(property, this).bindTo(this, name);
+    },
     run: function() {
       var unboundArgs = Array.prototype.slice.call(arguments);
       return this.memo = this.fnc.apply(this.context, this.argumentList(unboundArgs));
@@ -105,5 +108,24 @@
 
   function wrap(v) {
     return v && (v._isReactive || v == $R._) ? v : $R(function () {return v});
+  }
+
+  function property(obj, name, value) {
+    if (arguments.length > 2) {
+      var ownProperty = {}.hasOwnProperty;
+
+      var Object = function(o, k, v) {
+        for (var key in o) {
+          if (ownProperty.call(o, key)) { this[key] = o[key] }
+        }
+        this[k] = v;
+        return this;
+      };
+      Object.prototype = obj.__proto__;
+
+      return this(new Object(obj, name, value));
+    } else {
+      try { return obj[name] } catch(e) { return undefined }
+    }
   }
 })();
