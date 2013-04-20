@@ -125,6 +125,114 @@ ReactiveTest.prototype.testStateInitialValue = function() {
   assertEquals(10, foo());
   assertUndefined(bar());
 }
+ReactiveTest.prototype.testObjectProperties = function() {
+  var obj = $R.state({ a: 10 });
+  assertEquals({ a: 10 }, obj());
+  assertEquals(10, obj.property('a')());
+}
+ReactiveTest.prototype.testArrayProperties = function() {
+  var obj = $R.state([ 10 ]);
+  assertEquals([ 10 ], obj());
+  assertEquals(10, obj.property(0)());
+  assertEquals(1, obj.property('length')());
+}
+ReactiveTest.prototype.testInvalidProperties = function() {
+  var obj = $R.state({ a: 10 });
+  assertEquals({ a: 10 }, obj());
+  assertEquals(10, obj.property('a')());
+  assertUndefined(obj.property('b')());
+  assertUndefined(obj.property('a').property('b')());
+}
+ReactiveTest.prototype.testObjectUpdates = function() {
+  var obj = $R.state({ a: 10 });
+  var ref = obj();
+
+  assertEquals({ a: 10 }, ref);
+  assertEquals({ a: 10 }, obj());
+  assertEquals(10, obj.property('a')());
+  assertUndefined(obj.property('a').property('b')());
+  assertUndefined(obj.property('c')());
+
+  obj({ a: { b: 12 }, c: 2 });
+
+  assertEquals({ a: 10 }, ref);
+  assertEquals({ a: { b: 12 }, c: 2 }, obj());
+  assertEquals({ b: 12 }, obj.property('a')());
+  assertEquals(12, obj.property('a').property('b')());
+  assertEquals(2, obj.property('c')());
+}
+ReactiveTest.prototype.testObjectPropertyUpdates = function() {
+  var obj = $R.state({ a: 10 });
+  var a = obj.property('a');
+  var double = $R(function(x) { return x * 2 }).bindTo(a);
+  var ref = obj();
+
+  assertEquals({ a: 10 }, ref);
+  assertEquals({ a: 10 }, obj());
+  assertEquals(10, a());
+  assertEquals(20, double());
+
+  a(12);
+
+  assertEquals({ a: 10 }, ref);
+  assertEquals({ a: 12 }, obj());
+  assertEquals(12, a());
+  assertEquals(24, double());
+}
+ReactiveTest.prototype.testDeepObjectUpdates = function() {
+  var obj = $R.state({ a: { b: { c: { d: 10 } } } });
+  var a = obj.property('a');
+  var b = a.property('b');
+  var c = b.property('c');
+  var d = c.property('d');
+  var double = $R(function(x) { return x * 2 }).bindTo(d);
+  var ref = obj();
+
+  assertEquals({ a: { b: { c: { d: 10 } } } }, ref);
+  assertEquals({ a: { b: { c: { d: 10 } } } }, obj());
+  assertEquals({ b: { c: { d: 10 } } }, a());
+  assertEquals({ c: { d: 10 } }, b());
+  assertEquals({ d: 10 }, c());
+  assertEquals(10, d());
+  assertEquals(20, double());
+
+  obj({ a: { b: { c: { d: 12 } } } });
+
+  assertEquals({ a: { b: { c: { d: 10 } } } }, ref);
+  assertEquals({ a: { b: { c: { d: 12 } } } }, obj());
+  assertEquals({ b: { c: { d: 12 } } }, a());
+  assertEquals({ c: { d: 12 } }, b());
+  assertEquals({ d: 12 }, c());
+  assertEquals(12, d());
+  assertEquals(24, double());
+}
+ReactiveTest.prototype.testDeepObjectPropertyUpdates = function() {
+  var obj = $R.state({ a: { b: { c: { d: 10 } } } });
+  var a = obj.property('a');
+  var b = a.property('b');
+  var c = b.property('c');
+  var d = c.property('d');
+  var double = $R(function(x) { return x * 2 }).bindTo(d);
+  var ref = obj();
+
+  assertEquals({ a: { b: { c: { d: 10 } } } }, ref);
+  assertEquals({ a: { b: { c: { d: 10 } } } }, obj());
+  assertEquals({ b: { c: { d: 10 } } }, a());
+  assertEquals({ c: { d: 10 } }, b());
+  assertEquals({ d: 10 }, c());
+  assertEquals(10, d());
+  assertEquals(20, double());
+
+  d(12);
+
+  assertEquals({ a: { b: { c: { d: 10 } } } }, ref);
+  assertEquals({ a: { b: { c: { d: 12 } } } }, obj());
+  assertEquals({ b: { c: { d: 12 } } }, a());
+  assertEquals({ c: { d: 12 } }, b());
+  assertEquals({ d: 12 }, c());
+  assertEquals(12, d());
+  assertEquals(24, double());
+}
 ReactiveTest.prototype.testTopologicalSort = function() {
   var aRan = 0;
   var bRan = 0;
