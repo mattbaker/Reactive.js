@@ -54,19 +54,20 @@ Don't worry about $R.state yet, it just returns a reactive function that gets an
 
 
 ```javascript
-	//A = B + C
-	var reactiveA = $R(function (b, c) { return b + c });
+	var reactiveA = $R.state(1);
 	var reactiveB = $R.state(2);
-	var reactiveC = $R.state(1);
-	reactiveA.bindTo(reactiveB, reactiveC);
+	var reactiveC = $R(function (a, b) { return a + b }); // C = A + B
+	reactiveC.bindTo(reactiveA, reactiveB); // Tell C it depends on A and B
 
-	reactiveA();   //-> 3
-	reactiveB(5);  //Set reactiveB to 5
-	reactiveC(10); //Set reactiveC to 10
-	reactiveA();   //-> 15
+	reactiveA();   // -> 1
+	reactiveB();   // -> 2
+	reactiveC();   // -> 3
+	reactiveA(5);  // Set A to 5
+	reactiveB(10); // Set B to 10
+	reactiveC();   // Get C -> 15
 ```
 
-That's it. As you can see, Reactive.js asks you to _express values as functions_ and gives you the tools you need to _tell those functions how they depend on each other_. In the example above, any time `reactiveA` or `reactiveB` change, `reactiveC` will change too. `reactiveC` isn't assigned `a+b`, it _represents_ `a+b` at any moment in time.
+That's it. As you can see, Reactive.js asks you to _express values as functions_ and gives you the tools you need to _tell those functions how they depend on each other_. In the example above, any time `reactiveA` or `reactiveB` change, `reactiveC` will change too. `reactiveC` isn't assigned `a + b`, it _represents_ `a + b` at any moment in time.
 
 ###An example with time
 
