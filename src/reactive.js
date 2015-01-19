@@ -17,6 +17,7 @@
       rf.memo = $R.empty;
       return $R.extend(rf, reactiveExtensions, $R.pluginExtensions);
   }
+  $R.version = "1.0.0";
   $R._ = {};
   $R.empty = {};
   $R.state = function (initial) {
