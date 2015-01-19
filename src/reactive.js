@@ -21,13 +21,12 @@
   $R.empty = {};
   $R.state = function (initial) {
     var rFnc = $R(function () {
-      if (arguments.length) {
-        this.val = arguments[0];
-      }
       return this.val;
     })
     rFnc.context = rFnc;
     rFnc.val = initial;
+    rFnc.set = $R(function(value) { this.val = value; return this() }.bind(rFnc));
+    rFnc.modify = $R(function(transform) { return this.set(transform(this.val)) }.bind(rFnc));
     return rFnc;
   }
   $R.extend = function(o) {

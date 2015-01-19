@@ -105,25 +105,28 @@ ReactiveTest.prototype.testRebinding = function() {
   assertEquals([rf], dependencyB.dependents)
   assertEquals([rf], dependencyC.dependents)
 }
-ReactiveTest.prototype.testState = function() {
-  var foo = $R.state();
-  var i = 0;
-  var rf = $R(function(x){ i++; });
-  rf.bindTo(foo);
-  assertEquals(undefined, foo());
+ReactiveTest.prototype.testStateBinding = function() {
+  var state = $R.state();
+  var log = []
+  var historian = $R(function(history, x){ return history.push(x) }).bindTo(log, state)
 
-  foo(10101);
-  assertEquals(10101, foo());
+  state.set(100)
+  assertEquals([100], log);
 
-  rf();
-
-  assertEquals(4, i);
+  state.modify(function(v){return v+1});
+  assertEquals([100, 101], log);
 }
-ReactiveTest.prototype.testStateInitialValue = function() {
-  var foo = $R.state(10);
-  var bar = $R.state();
-  assertEquals(10, foo());
-  assertUndefined(bar());
+ReactiveTest.prototype.testStateSet = function() {
+  var state = $R.state(10);
+  assertEquals(10, state());
+  state.set(11)
+  assertEquals(11, state());
+}
+ReactiveTest.prototype.testStateModify = function() {
+  var state = $R.state(100);
+  assertEquals(100, state());
+  state.modify(function(v) { return v + 1 })
+  assertEquals(101, state());
 }
 ReactiveTest.prototype.testTopologicalSort = function() {
   var aRan = 0;
@@ -143,4 +146,15 @@ ReactiveTest.prototype.testTopologicalSort = function() {
 ReactiveTest.prototype.testToString = function() {
   var a = $R(function (){ return "foo"; });
   assertEquals('function(){return"foo";}', a.toString().replace(/\s/g,''));
+}
+ReactiveTest.prototype.testReadmeStateExample = function() {
+  var a = $R.state(1);
+  var b = $R.state(2);
+  var c = $R(function (v1, v2) { return v1 + v2 }); // C = A + B
+  c.bindTo(a, b); // Tell C it depends on A and B
+
+  assertEquals(3,c())
+  a.set(5)   // Set A to 5
+  b.set(10)  // Set B to 10
+  assertEquals(15,c())
 }

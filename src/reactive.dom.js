@@ -9,30 +9,23 @@
     this.el = $(inputEl);
   }
   $R.Dom.prototype = {
-    bindAttributeTo: function (attribute, rf, formatter) {
-      formatter = formatter || identity
+    bindAttributeTo: function (attribute, rf) {
       $R(function(v) {
-        if (this.el[0]) { this.el[0][attribute] = formatter(v) };
+        if (this.el[0]) { this.el[0][attribute] = v };
       }, this).bindTo(rf);
       return this;
     },
-    bindInputTo: function (rf, formatter) {
-      this.bindAttributeTo("value", rf, formatter);
-      return this;
-    },
-    linkInput: function(rf, formatter, sanitizer) {
-      this.bindInputTo(rf, formatter);
-      rf.bindToInput(this.el, sanitizer);
+    bindInputTo: function (rf) {
+      this.bindAttributeTo("value", rf);
       return this;
     }
   }
 
   $R.extend($R.pluginExtensions, {
-    bindToInput: function(input, sanitizer) {
-      sanitizer = sanitizer || identity;
+    bindToInput: function(input) {
       var rf = this;
       $(input).on("change", function () {
-        rf(sanitizer(this.value));
+        rf(this.value);
       })
       return this;
     }

@@ -50,24 +50,22 @@ Fortunately for you, Reactive.js does just that.
 
 At its core, Reactive.js is just a single method, `$R()`. `$R()` accepts a function and returns you an augmented version of that function that is meant to represent a value in your program. How is it augmented exactly? "Reactive functions" gain a new method called `.bindTo()`. `bindTo()` accepts one or more reactive functions, and binds them to your function's arguments via partial application.
 
-Don't worry about $R.state yet, it just returns a reactive function that gets and sets internal state (handy for literal values) — more on that later.
-
+Don't worry about $R.state yet, it just returns a reactive function that gives you a way to maintain and retrieve an internal state value (like a cell in a spreadsheet that doesn't start with `=`).
 
 ```javascript
-	var reactiveA = $R.state(1);
-	var reactiveB = $R.state(2);
-	var reactiveC = $R(function (a, b) { return a + b }); // C = A + B
-	reactiveC.bindTo(reactiveA, reactiveB); // Tell C it depends on A and B
+	var a = $R.state(1);
+	var b = $R.state(2);
+	var c = $R(function (v1, v2) { return v1 + v2 }); // C = A + B
+	c.bindTo(a, b); // Tell C it depends on A and B
 
-	reactiveA();   // -> 1
-	reactiveB();   // -> 2
-	reactiveC();   // -> 3
-	reactiveA(5);  // Set A to 5
-	reactiveB(10); // Set B to 10
-	reactiveC();   // Get C -> 15
+	c() // -> 3
+
+	a.set(5)   // Set A to 5
+	b.set(10)  // Set B to 10
+	c() // -> 15
 ```
 
-That's it. As you can see, Reactive.js asks you to _express values as functions_ and gives you the tools you need to _tell those functions how they depend on each other_. In the example above, any time `reactiveA` or `reactiveB` change, `reactiveC` will change too. `reactiveC` isn't assigned `a + b`, it _represents_ `a + b` at any moment in time.
+That's it. As you can see, Reactive.js asks you to _express values as functions_ and gives you the tools you need to _tell those functions how they depend on each other_. In the example above, any time `a` or `b` change, `c` will change too. `c` isn't assigned `a + b`, it _represents_ `a + b` at any moment in time.
 
 ###An example with time
 
@@ -173,30 +171,33 @@ When you supply a function to `$R()` it returns a new function with the addition
 
 We bound `a` and `c` in our reactive function to `myA` and `myC`, so now `reactiveFnc` only accepts  one argument, the argument for `b`.
 
-####$R.state(_initial_) &#10145; _ReactiveFunction_
+####$R.state([initial]) &#10145; _ReactiveFunction_
 
 Since Reactive.js uses functions, not variables, to represent values, it's helpful to have a concise way to represent state. `$R.state` returns a reactive function that gets and sets internal state.
 
-If you call the function without an argument, it simply returns the currently saved value. If you provide an argument, the reactive function will store that argument as its new state value. This is how you'd replace `var a` with `$R.state()`:
+State can be set with `set`:
 
 ```javascript
-	//With var
-	var a = 3;
-	console.log(a); //->3
-	a = 4;
-	console.log(a); //->4
+	var log = [];
+	var num = $R.state();
+	var historian = $R(function(history, v) { history.push(v) }).bindTo(log, num)
 
-	//With $R.state
-	var a = $R.state(3);
-	console.log(a()); //->3
-	a(4)
-	console.log(a()); //->4
+	num.set(3);
+	num.set(4);
+	log //-> [3, 4]
 ```
 
-`$R.state` is a convenient way to represent reactive values in your application that will only change by assignment (much like typing a literal number into a spreadsheet composed of many calculations).
+Or modified by passing a transform function to `modify`:
 
-The function returned by $R.state is, of course, reactive. They can bind to, and be bound to, other reactive functions.
+```javascript
+	var log = [];
+	var num = $R.state();
+	var historian = $R(function(history, v) { history.push(v) }).bindTo(log, num)
 
+	num.set(10);
+	num.modify(function(v) { return v + 1 });
+	log // -> [10, 11]
+```
 
 ##Notes on internals
 There are a few things to throw out there for the curious:
@@ -209,9 +210,6 @@ Reactive.js performs a topological sort of the dependency graph, meaning it asse
 
 ###Dependency graph traversal is recursive
 In a worst case scenario, with a chain of dependent nodes thousands in number, we can exceed the size of the call stack. You'd *really* have to try at this to do it, but the limitation is out there. If it's truly an issue the traversal function can be swapped for a loop in the future.
-
-###State is tough
-State doesn't fit into the whole "functional reactive" paradigm very neatly. Simple operations like incrementing a $R.state value by one would require two graph traversals, e.g. `myVal(myVal() + 1)`. As Reactive.js matures, we'll finds better ways to address these problems.
 
 ##Where is it being used?
 

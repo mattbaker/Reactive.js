@@ -24,35 +24,18 @@ ReactiveDomTest.prototype.testBindToInput = function() {
 
 ReactiveDomTest.prototype.testBindToInputWithSanitizer = function() {
   /*:DOC += <input id="myInput" value=""> */
-  var x = null;
-  $R(function (v) {
-    x = v;
-  }).bindToInput("#myInput", function (v) {return v.toUpperCase()});
+  var upperCased = $R(function (v) {return v.toUpperCase()});
+  upperCased.bindToInput("#myInput");
+  $R(assertEquals).bindTo("FOO", upperCased);
   $("#myInput").val("foo").change();
-  assertEquals("FOO", x);
 }
 
 ReactiveDomTest.prototype.testBindInputTo = function() {
   /*:DOC += <input id="myInput" value=""> */
-  var barFnc = $R(function() {
-    return "bar";
-  });
-  $R.dom("#myInput").bindInputTo(barFnc);
+  var setter = $R(function(x) { return x });
+  $R.dom("#myInput").bindInputTo(setter);
 
   assertEquals("", $("#myInput").val());
-  barFnc();
-  assertEquals("bar", $("#myInput").val());
-}
-
-ReactiveDomTest.prototype.testLinkInput = function() {
-  /*:DOC += <input id="myInput" value=""> */
-  var foo = $R.state("bar");
-  $R.dom("#myInput").linkInput(foo, function (v){return v+"!"}, function(v){return "$"+v});
-
-  assertEquals("", $("#myInput").val());
-  foo("hello");
-  assertEquals("hello!", $("#myInput").val())
-  $("#myInput").val("world").change();
-  assertEquals("$world", foo());
-
+  setter("str");
+  assertEquals("str", $("#myInput").val());
 }
