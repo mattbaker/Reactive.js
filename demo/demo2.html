@@ -82,16 +82,16 @@
         svgPath.bindTo(lineGenerator, data);
         vizDimensions.bindTo(width,heightMinusHeader);
 
-        width($(window).width());
-        height($(window).height());
+        width.set($(window).width());
+        height.set($(window).height());
         data.bindTo(months, rate)();
 
         //Make available in our console
         window.chart = {width:width, height:heightMinusHeader, margin:margin, months:months, rate:rate}
 
         $(window).on("resize", function () {
-            width($(window).width());
-            height($(window).height());
+            width.set($(window).width());
+            height.set($(window).height());
         });
 
     });

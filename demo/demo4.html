@@ -49,16 +49,20 @@
         $(".excel.reactive").find("input").focus();
       });
       $(function() {
-        var $table = $(".excel.reactive");
+        var $reactiveTbl = $(".excel.reactive");
+        var $staticTbl = $(".excel.static");
 
-        var a1 = $R.state(4).bindToInput($table.find("input"), function(v){return parseInt(v)});
+        var parsedInput = $R(parseInt).bindToInput($reactiveTbl.find("input"))
+        var a1 = $R.state();
         var b1 = $R(function(a1) { return a1 + 1}).bindTo(a1);
         var a2 = $R(function(b1) { return b1 * 2}).bindTo(b1);
         var b2 = $R(function(b1, a2) { return b1 + a2}).bindTo(b1, a2);
 
-        $R.dom($table.find(".b1")).bindAttributeTo("innerHTML", b1);
-        $R.dom($table.find(".a2")).bindAttributeTo("innerHTML", a2);
-        $R.dom($table.find(".b2")).bindAttributeTo("innerHTML", b2);
+        a1.set.bindTo(parsedInput);
+        $R.dom($staticTbl.find(".a1-label")).bindAttributeTo("innerHTML", a1);
+        $R.dom($reactiveTbl.find(".b1")).bindAttributeTo("innerHTML", b1);
+        $R.dom($reactiveTbl.find(".a2")).bindAttributeTo("innerHTML", a2);
+        $R.dom($reactiveTbl.find(".b2")).bindAttributeTo("innerHTML", b2);
       });
 
       </script>
@@ -73,7 +77,7 @@
       <tbody>
         <tr>
           <td class="row-number">1
-          <td>4
+          <td class="a1-label">
           <td>=$A1+1
         <tr>
           <td class="row-number">2
@@ -90,13 +94,13 @@
     <tbody>
       <tr>
         <td class="row-number">1</td>
-        <td class="a1"><input type="text" value="4">
-        <td class="b1">5
+        <td class="a1"><input type="text" value="">
+        <td class="b1">
       </tr>
       <tr>
         <td class="row-number">2
-        <td class="a2">10
-        <td class="b2">15
+        <td class="a2">
+        <td class="b2">
       </tr>
     </tbody>
   </table>

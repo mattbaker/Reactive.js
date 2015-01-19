@@ -21,7 +21,7 @@
     <script>
     $(function() {
         var now = $R.state(new Date);
-        setInterval(function () {now(new Date)}, 1);
+        setInterval(function () {now.set(new Date)}, 1);
 
         var day = $R(function (date) {
             var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
