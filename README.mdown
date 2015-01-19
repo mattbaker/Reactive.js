@@ -214,3 +214,5 @@ In a worst case scenario, with a chain of dependent nodes thousands in number, w
 ##Where is it being used?
 
  * [Wealthfront.com](https://www.wealthfront.com/plan?values=6%7C50000%7C8%7C8.0%7C25%7C50000%7C100000%7CS%7Cfalse%7Cfalse%7CD%7Cgain%7CkeepAll%7CB), managing visualizations, calculations and UI synchronization
+ * [Ruby Object Graph Viz](https://github.com/mattbaker/ruby-heap-viz)
+ 
