@@ -2,6 +2,7 @@
 ##A (really) short intro
 Reactive.js will augment ("reactify") a given Javascript function so that it may track dependencies on other reactive functions. You might think of a reactive function as representing a cell in a spreadsheet. Spreadsheet cells can reference each other, depend on each other, and cells update their values automatically when one of their dependent cells change. Reactive functions can do this too. To be clear, they're still Javascript functions, just with a little "extra".
 
+Note that Reactive.js' take on functional-reactive programming is discrete and [push-based](http://conal.net/papers/push-pull-frp/push-pull-frp.pdf), which differs from some other FRP libraries.
 
 ##Reactive Programming in 60 seconds
 
