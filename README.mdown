@@ -1,10 +1,10 @@
-#Reactive.js
-##A (really) short intro
+# Reactive.js
+## A (really) short intro
 Reactive.js will augment ("reactify") a given Javascript function so that it may track dependencies on other reactive functions. You might think of a reactive function as representing a cell in a spreadsheet. Spreadsheet cells can reference each other, depend on each other, and cells update their values automatically when one of their dependent cells change. Reactive functions can do this too. To be clear, they're still Javascript functions, just with a little "extra".
 
 Note that Reactive.js' take on functional-reactive programming is discrete and [push-based](http://conal.net/papers/push-pull-frp/push-pull-frp.pdf), which differs from some other FRP libraries.
 
-##Reactive Programming in 60 seconds
+## Reactive Programming in 60 seconds
 
 In Reactive programming it's easier to think of our variables as _expressions_, not as _assignments_. In order to understand the difference, consider the statement "`a = b + c`".
 
@@ -14,7 +14,7 @@ But we could also read it as _"`a` **represents** the sum of `b` and `c`, at any
 
 Reactive programming means we describe our program using the second interpretation. We don't assign variables, we _express_ them, and they don't represent discrete values, they represent a value that _changes over time_.
 
-##Reactive programming in Javascript
+## Reactive programming in Javascript
 Obviously Javascript is not a reactive language, but there are advantages to being able to express ourselves reactively. Reactive programming can be immensely useful in describing systems of equations, complicated UIs, and data visualizations to name a few.
 
 So let's reexamine our earlier statement about reactive programming, then we'll see how Javascript fits into the picture (and how Reactive.js fits into Javascript).
@@ -47,7 +47,7 @@ When we combine our two conclusions, we arrive at the following:
 Fortunately for you, Reactive.js does just that.
 
 
-##Using Reactive.js
+## Using Reactive.js
 
 At its core, Reactive.js is just a single method, `$R()`. `$R()` accepts a function and returns you an augmented version of that function that is meant to represent a value in your program. How is it augmented exactly? "Reactive functions" gain a new method called `.bindTo()`. `bindTo()` accepts one or more reactive functions, and binds them to your function's arguments via partial application.
 
@@ -68,7 +68,7 @@ Don't worry about $R.state yet, it just returns a reactive function that gives y
 
 That's it. As you can see, Reactive.js asks you to _express values as functions_ and gives you the tools you need to _tell those functions how they depend on each other_. In the example above, any time `a` or `b` change, `c` will change too. `c` isn't assigned `a + b`, it _represents_ `a + b` at any moment in time.
 
-###An example with time
+### An example with time
 
 Since we talk about variables representing a value that changes over time, let's actually create variables that depend on, well, a value that changes over time.
 
@@ -107,7 +107,7 @@ We can log out any of our reactive variables at any time and we'll see that they
 	console.log(isItSunday()); //-> true
 ```
 
-###Values-as-functions are purely conceptual
+### Values-as-functions are purely conceptual
 Not every value in your code is represented as something you can return. As one example, we can still think of the content of the div in the following example as a single value:
 
 ```html
@@ -122,11 +122,11 @@ Not every value in your code is represented as something you can return. As one 
 
 We didn't create a function that "updates the contents of the time div", we're saying this function _represents_ the contents of the time div. As the setInterval statement updates "now" every millisecond our div will update too, all on its own.
 
-###Reactive.js is minimal
+### Reactive.js is minimal
 Reactive.js seeks to be as minimal and unobtrusive as possible. Because it operates on, and returns, normal Javascript functions, it's _very_ easy to integrate into existing code. If you start writing "reactive" code, any existing function can be integrated as a dependency by creating a reactive version of it with `$R()`.
 
-##Reactive.js API
-####$R(_function[, context]_) &#10145; _ReactiveFunction_
+## Reactive.js API
+#### $R(_function[, context]_) &#10145; _ReactiveFunction_
 `$R()` takes a function and optional context. If supplied a context, Reactive.js will ensure that your function runs with `this` bound to `context`.
 
 `$R()` returns a new function that is functionally identical, but with augmentation. In short, `$R()` returns a "reactified" version of your function, giving it the ability to participate in the dependency graph of reactive values in your application. A reactive function may bind (via `.bindTo()`) its arguments to other reactive functions, and vice versa.
@@ -138,7 +138,7 @@ Reactive.js seeks to be as minimal and unobtrusive as possible. Because it opera
 	reactiveSum(1,2); //-> 3
 ```
 
-####rFnc.**bindTo**(_ReactiveFunction_,…) &#10145; _rFnc_
+#### rFnc.**bindTo**(_ReactiveFunction_,…) &#10145; _rFnc_
 When you supply a function to `$R()` it returns a new function with the addition of a **`bindTo()`** method. `bindTo()` takes one or more reactive functions as its arguments. The provided functions are bound to the arguments in your function (partial application). When those functions' values update they will be passed as the arguments to your function, which will re-calculate itself (and pass its value to any other functions that depend on _it_ in turn).
 
 ```javascript
@@ -162,7 +162,7 @@ When you supply a function to `$R()` it returns a new function with the addition
 
 `bindTo()` can accept a mix of literals and reactive functions.
 
-####$R._
+#### $R._
 `$R._` is a special value that represents a "gap" when binding up the arguments in your reactive function. For example, if we want to bind the *first* and *third* arguments of a function, but *not* the second, we would say:
 
 ```javascript
@@ -172,7 +172,7 @@ When you supply a function to `$R()` it returns a new function with the addition
 
 We bound `a` and `c` in our reactive function to `myA` and `myC`, so now `reactiveFnc` only accepts  one argument, the argument for `b`.
 
-####$R.state([initial]) &#10145; _ReactiveFunction_
+#### $R.state([initial]) &#10145; _ReactiveFunction_
 
 Since Reactive.js uses functions, not variables, to represent values, it's helpful to have a concise way to represent state. `$R.state` returns a reactive function that gets and sets internal state.
 
@@ -200,19 +200,19 @@ Or modified by passing a transform function to `modify`:
 	log // -> [10, 11]
 ```
 
-##Notes on internals
+## Notes on internals
 There are a few things to throw out there for the curious:
 
-###Values are cached
+###V alues are cached
 Reactive functions cache their values when they are executed. Consider a function X that depends on functions Y and Z (which have already run). If we run function X if will ask for the values of it dependencies X and Y, however _X and Y will not be run because they have not changed_. This is important for large systems of interdependent reactive functions. And, of course, if a dependency's value changes its cached value is updated and any downstream dependent values will execute and update their cached values too.
 
-###Functions are not evaluated redundantly
+### Functions are not evaluated redundantly
 Reactive.js performs a topological sort of the dependency graph, meaning it assembles a list of functions to evaluate in-order. Reactive.js is smart enough to ensure that a function, even if it is a dependency for several others, will only be executed once.
 
-###Dependency graph traversal is recursive
+### Dependency graph traversal is recursive
 In a worst case scenario, with a chain of dependent nodes thousands in number, we can exceed the size of the call stack. You'd *really* have to try at this to do it, but the limitation is out there. If it's truly an issue the traversal function can be swapped for a loop in the future.
 
-##Where is it being used?
+## Where is it being used?
 
  * [Wealthfront.com](https://www.wealthfront.com/plan?values=6%7C50000%7C8%7C8.0%7C25%7C50000%7C100000%7CS%7Cfalse%7Cfalse%7CD%7Cgain%7CkeepAll%7CB), managing visualizations, calculations and UI synchronization
  * [Ruby Object Graph Viz](https://github.com/mattbaker/ruby-heap-viz)
